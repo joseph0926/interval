@@ -9,7 +9,16 @@
 		"typecheck": "turbo typecheck",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"lint": "turbo lint"
+		"lint": "turbo lint",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{js,ts,tsx}": [
+			"eslint --fix"
+		],
+		"*.{js,ts,tsx,json,md,yaml,yml}": [
+			"prettier --write"
+		]
 	},
 	"keywords": [],
 	"author": "joseph0926",
@@ -20,6 +29,8 @@
 		"@types/node": "^24.10.1",
 		"eslint": "^9.39.1",
 		"globals": "^16.5.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7",
 		"prettier": "^3.7.1",
 		"prettier-plugin-tailwindcss": "^0.7.1",
 		"turbo": "^2.6.1",
