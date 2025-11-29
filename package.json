@@ -8,17 +8,22 @@
 		"build": "turbo build",
 		"typecheck": "turbo typecheck",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"lint": "turbo lint"
 	},
 	"keywords": [],
 	"author": "joseph0926",
 	"license": "ISC",
 	"packageManager": "pnpm@10.24.0",
 	"devDependencies": {
+		"@eslint/js": "^9.39.1",
 		"@types/node": "^24.10.1",
+		"eslint": "^9.39.1",
+		"globals": "^16.5.0",
 		"prettier": "^3.7.1",
 		"prettier-plugin-tailwindcss": "^0.7.1",
 		"turbo": "^2.6.1",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.48.0"
 	}
 }
