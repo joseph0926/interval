@@ -4,6 +4,7 @@ import cors from "./plugins/cors";
 import health from "./routes/health";
 import errorHandler from "./plugins/error-handler";
 import prisma from "./plugins/prisma";
+import trpc from "./plugins/trpc";
 
 export async function buildApp() {
 	const app = Fastify({ logger: true });
@@ -15,6 +16,7 @@ export async function buildApp() {
 
 	await errorHandler(app);
 
+	await trpc(app);
 	await health(app);
 
 	return app;
