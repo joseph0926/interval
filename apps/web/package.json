@@ -10,12 +10,18 @@
 		"typecheck": "tsc -b"
 	},
 	"dependencies": {
+		"@firsttx/local-first": "^0.8.0",
+		"@firsttx/prepaint": "^0.6.0",
+		"@firsttx/tx": "^0.5.2",
 		"@tailwindcss/vite": "^4.1.17",
+		"@trpc/client": "^11.7.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.555.0",
+		"motion": "^12.23.24",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
+		"react-router": "^7.9.6",
 		"tailwind-merge": "^3.4.0",
 		"tailwindcss": "^4.1.17"
 	},
