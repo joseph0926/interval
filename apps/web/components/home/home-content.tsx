@@ -66,7 +66,7 @@ export function HomeContent({ summary }: HomeContentProps) {
 				transition={{ delay: 0.3 }}
 				className="px-6 pb-6"
 			>
-				<SmokingButton state={homeState} />
+				<SmokingButton state={homeState} summary={summary} />
 			</motion.div>
 		</div>
 	);
