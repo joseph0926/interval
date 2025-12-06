@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { setSessionUserId } from "@/lib/session";
 import { completeOnboardingSchema } from "@/lib/validations/onboarding";
 
 export type OnboardingActionState = {
@@ -39,5 +40,7 @@ export async function completeOnboarding(
 		},
 	});
 
-	redirect(`/?userId=${user.id}`);
+	await setSessionUserId(user.id);
+
+	redirect("/");
 }
