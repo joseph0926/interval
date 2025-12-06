@@ -1,23 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
-import { ReasonSelector } from "./reason-selector";
-import { recordSmoking } from "@/actions/smoking";
-import { toast } from "sonner";
+import { EarlyLightContent } from "./early-light-content";
+import { EarlyCoachingContent } from "./early-coaching-content";
 import type { TodaySummary } from "@/types/home.type";
-import type { ReasonCode } from "@/prisma/generated/prisma/enums";
 
 interface EarlySmokeContentProps {
 	summary: TodaySummary;
 	onComplete: () => void;
 }
 
+type Mode = "SELECT" | "LIGHT" | "COACHING";
+
 export function EarlySmokeContent({ summary, onComplete }: EarlySmokeContentProps) {
-	const [reasonCode, setReasonCode] = useState<ReasonCode | null>(null);
-	const [customReason, setCustomReason] = useState("");
-	const [isPending, setIsPending] = useState(false);
+	const [mode, setMode] = useState<Mode>("SELECT");
 
 	const remainingMinutes = summary.lastSmokedAt
 		? Math.max(
@@ -28,34 +27,19 @@ export function EarlySmokeContent({ summary, onComplete }: EarlySmokeContentProp
 			)
 		: 0;
 
-	const handleSubmit = async () => {
-		if (!reasonCode) {
-			toast.error("이유를 선택해주세요");
-			return;
-		}
+	if (mode === "LIGHT") {
+		return <EarlyLightContent summary={summary} onComplete={onComplete} />;
+	}
 
-		setIsPending(true);
-
-		const result = await recordSmoking({
-			type: "EARLY",
-			reasonCode,
-			reasonText: reasonCode === "OTHER" ? customReason : null,
-			coachingMode: "LIGHT",
-		});
-
-		setIsPending(false);
-
-		if (!result.success) {
-			toast.error(result.error);
-			return;
-		}
-
-		toast("이 시간대가 특히 힘든 구간이에요.", {
-			description: "내일 리포트에서 이 패턴을 다시 보여드릴게요.",
-		});
-
-		onComplete();
-	};
+	if (mode === "COACHING") {
+		return (
+			<EarlyCoachingContent
+				summary={summary}
+				remainingMinutes={remainingMinutes}
+				onComplete={onComplete}
+			/>
+		);
+	}
 
 	return (
 		<div className="flex flex-col gap-6 px-4">
@@ -67,26 +51,31 @@ export function EarlySmokeContent({ summary, onComplete }: EarlySmokeContentProp
 					남았어요
 				</p>
 			</div>
-			<div className="rounded-xl bg-muted/50 p-4">
-				<p className="text-sm text-muted-foreground">
-					괜찮아요. 오늘 이 시간에 당기곤 한다는 걸 알게 되었어요.
-				</p>
-			</div>
-			<ReasonSelector
-				value={reasonCode}
-				customReason={customReason}
-				onChange={setReasonCode}
-				onCustomReasonChange={setCustomReason}
-			/>
-			<DrawerFooter className="px-0">
-				<Button
-					size="lg"
-					className="w-full rounded-xl py-6"
-					onClick={handleSubmit}
-					disabled={isPending || !reasonCode}
+			<div className="flex flex-col gap-3">
+				<motion.button
+					type="button"
+					initial={{ opacity: 0, y: 5 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.03 }}
+					onClick={() => setMode("LIGHT")}
+					className="rounded-xl border border-border bg-card px-4 py-4 text-left transition-colors hover:border-primary/50"
 				>
-					{isPending ? "기록 중..." : "시간만 빨리 기록하기"}
-				</Button>
+					<p className="font-medium">시간만 빨리 기록하기</p>
+					<p className="mt-1 text-sm text-muted-foreground">바쁠 때, 간단하게</p>
+				</motion.button>
+				<motion.button
+					type="button"
+					initial={{ opacity: 0, y: 5 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.06 }}
+					onClick={() => setMode("COACHING")}
+					className="rounded-xl border border-primary bg-primary/5 px-4 py-4 text-left transition-colors"
+				>
+					<p className="font-medium text-primary">30초만 멈춰보고 기록하기</p>
+					<p className="mt-1 text-sm text-muted-foreground">잠깐 호흡하고 결정해요</p>
+				</motion.button>
+			</div>
+			<DrawerFooter className="px-0">
 				<DrawerClose asChild>
 					<Button variant="ghost" className="w-full">
 						취소
