@@ -7,7 +7,7 @@ import { useBridge, BridgeMessage } from "@/lib/bridge";
 
 function getBaseUrl(): string {
 	if (!__DEV__) {
-		return "https://your-production-url.com";
+		return "https://interval-web.vercel.app";
 	}
 
 	if (Platform.OS === "android") {
