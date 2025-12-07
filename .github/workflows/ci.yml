@@ -16,9 +16,8 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter server db:gen
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
