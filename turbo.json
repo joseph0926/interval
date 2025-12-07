@@ -1,9 +1,12 @@
 {
 	"$schema": "https://turborepo.com/schema.json",
 	"tasks": {
+		"db:gen": {
+			"cache": false
+		},
 		"build": {
-			"dependsOn": ["^build"],
-			"outputs": ["dist/**"]
+			"dependsOn": ["^build", "db:gen"],
+			"outputs": ["dist/**", ".next/**"]
 		},
 		"typecheck": {
 			"dependsOn": ["^typecheck"]
