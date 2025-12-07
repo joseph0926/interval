@@ -10,7 +10,8 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "eslint .",
-		"prepare": "husky"
+		"prepare": "husky",
+		"db:gen": "turbo db:gen"
 	},
 	"lint-staged": {
 		"*.{js,ts,tsx}": [
