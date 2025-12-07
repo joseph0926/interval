@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { recordSmoking, updateTodaySettings } from "@/actions/smoking";
 import { toast } from "sonner";
+import { notifySmokingRecorded } from "@/lib/native-bridge";
 import type { TodaySummary } from "@/types/home.type";
 
 interface FirstSmokeContentProps {
@@ -33,6 +34,9 @@ export function FirstSmokeContent({ summary, onComplete }: FirstSmokeContentProp
 			toast.error(settingsResult.error ?? recordResult.error);
 			return;
 		}
+
+		const nextTargetTime = new Date(Date.now() + targetInterval * 60 * 1000);
+		notifySmokingRecorded(nextTargetTime, motivation);
 
 		toast.success("오늘의 간격 여정이 시작됐어요!", {
 			description: `목표 간격 ${targetInterval}분으로 함께 해볼게요.`,

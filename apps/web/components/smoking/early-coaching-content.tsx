@@ -10,6 +10,7 @@ import { CoachingTimer } from "./coaching-timer";
 import { recordSmoking } from "@/actions/smoking";
 import { addDelay } from "@/actions/smoking";
 import { toast } from "sonner";
+import { notifySmokingRecorded, scheduleDelayNotification } from "@/lib/native-bridge";
 import type { TodaySummary } from "@/types/home.type";
 import type { ReasonCode } from "@/prisma/generated/prisma/enums";
 
@@ -60,6 +61,9 @@ export function EarlyCoachingContent({
 			return;
 		}
 
+		const delayEndTime = new Date(Date.now() + 5 * 60 * 1000);
+		scheduleDelayNotification(delayEndTime);
+
 		toast.success("대단해요! 담배와 5분의 거리를 더 벌렸어요.", {
 			description: "조금만 더 버텨봐요 💪",
 		});
@@ -84,6 +88,9 @@ export function EarlyCoachingContent({
 			toast.error(result.error);
 			return;
 		}
+
+		const nextTargetTime = new Date(Date.now() + summary.targetInterval * 60 * 1000);
+		notifySmokingRecorded(nextTargetTime, summary.motivation ?? undefined);
 
 		toast("오늘은 여기까지가 한계였던 것 같아요.", {
 			description: "덕분에 언제, 왜 힘든지 데이터를 하나 더 알았어요.",

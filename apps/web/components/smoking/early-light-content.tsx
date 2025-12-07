@@ -6,6 +6,7 @@ import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { ReasonSelector } from "./reason-selector";
 import { recordSmoking } from "@/actions/smoking";
 import { toast } from "sonner";
+import { notifySmokingRecorded } from "@/lib/native-bridge";
 import type { TodaySummary } from "@/types/home.type";
 import type { ReasonCode } from "@/prisma/generated/prisma/enums";
 
@@ -49,6 +50,9 @@ export function EarlyLightContent({ summary, onComplete }: EarlyLightContentProp
 			toast.error(result.error);
 			return;
 		}
+
+		const nextTargetTime = new Date(Date.now() + summary.targetInterval * 60 * 1000);
+		notifySmokingRecorded(nextTargetTime, summary.motivation ?? undefined);
 
 		toast("이 시간대가 특히 힘든 구간이에요.", {
 			description: "내일 리포트에서 이 패턴을 다시 보여드릴게요.",

@@ -6,6 +6,7 @@ import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { ReasonSelector } from "./reason-selector";
 import { recordSmoking } from "@/actions/smoking";
 import { toast } from "sonner";
+import { notifySmokingRecorded } from "@/lib/native-bridge";
 import type { TodaySummary } from "@/types/home.type";
 import type { ReasonCode } from "@/prisma/generated/prisma/enums";
 
@@ -44,6 +45,9 @@ export function NormalSmokeContent({ summary, onComplete }: NormalSmokeContentPr
 			toast.error(result.error);
 			return;
 		}
+
+		const nextTargetTime = new Date(Date.now() + summary.targetInterval * 60 * 1000);
+		notifySmokingRecorded(nextTargetTime, summary.motivation ?? undefined);
 
 		toast.success(`좋아요! 담배와 ${currentInterval}분의 거리를 벌렸어요.`, {
 			description: "목표를 지켰어요 👏",
