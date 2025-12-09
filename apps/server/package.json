@@ -1,0 +1,31 @@
+{
+	"name": "@interval/server",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"db:gen": "prisma generate",
+		"db:mig": "prisma migrate dev",
+		"db:stu": "prisma studio"
+	},
+	"packageManager": "pnpm@10.24.0",
+	"dependencies": {
+		"@hono/node-server": "^1.19.7",
+		"@hono/zod-validator": "^0.7.5",
+		"@prisma/adapter-pg": "^7.1.0",
+		"@prisma/client": "^7.1.0",
+		"dotenv": "^17.2.3",
+		"hono": "^4.10.8",
+		"hono-rate-limiter": "^0.4.2",
+		"pg": "^8.16.3",
+		"zod": "^4.1.13"
+	},
+	"devDependencies": {
+		"@types/pg": "^8.15.6",
+		"tsx": "^4.21.0"
+	}
+}
