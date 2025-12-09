@@ -1,0 +1,7 @@
+{
+	"CFBundleDisplayName": "간격",
+	"CFBundleName": "간격",
+	"NSUserTrackingUsageDescription": "앱 사용 경험 개선을 위해 사용됩니다.",
+	"NSCameraUsageDescription": "프로필 사진 촬영을 위해 카메라 접근이 필요합니다.",
+	"NSPhotoLibraryUsageDescription": "프로필 사진 선택을 위해 사진 라이브러리 접근이 필요합니다."
+}
