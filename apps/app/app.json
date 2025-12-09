@@ -3,7 +3,7 @@
 		"name": "간격",
 		"slug": "interval-app",
 		"description": "지금 한 개비 말고, 조금 있다가 한 개비. 담배와의 간격을 벌려주는 심리 타이머 앱",
-		"version": "1.0.0",
+		"version": "1.0.1",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "interval",
