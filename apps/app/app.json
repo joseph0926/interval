@@ -71,9 +71,6 @@
 			"eas": {
 				"projectId": "7d1b3e20-837f-4beb-89c5-a51b1ea8470b"
 			}
-		},
-		"locales": {
-			"ko": "./locales/ko.json"
 		}
 	}
 }
