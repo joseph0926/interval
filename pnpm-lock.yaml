@@ -134,8 +134,8 @@ importers:
   apps/client:
     dependencies:
       '@firsttx/local-first':
-        specifier: ^0.8.2
-        version: 0.8.2(react@19.2.1)(zod@4.1.13)
+        specifier: ^0.8.3
+        version: 0.8.3(react@19.2.1)(zod@4.1.13)
       '@firsttx/prepaint':
         specifier: ^0.6.1
         version: 0.6.1(esbuild@0.25.12)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(vite@7.2.7(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2))
@@ -163,6 +163,9 @@ importers:
       react-router:
         specifier: ^7.10.1
         version: 7.10.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -1181,12 +1184,12 @@ packages:
     resolution: {integrity: sha512-ReZxZ8pdnoI3tP/dNnJdnmAk7uLT4FjsKDGW7YeDdvdOMz2XCQSmSCM9IWlrXuWtMF9zeSB6WJtEhCQ41gQOfw==}
     hasBin: true
 
-  '@firsttx/local-first@0.8.2':
-    resolution: {integrity: sha512-NDDBVA+dDWMeXonYKiIpnMaMOLw94GZg38xfBjtpcB31J5jO8qCLYf/6elKMy0amIJ/XKImQPOHTnh6JkjWVOw==}
+  '@firsttx/local-first@0.8.3':
+    resolution: {integrity: sha512-PB26et9pcEneuIgRewfzUtZyGGkRw5ZPz5pHIJ3rnrGQCDtOHyr1LqbF1ugL5C2N6RT0FZkbCXHaSZpMSey38Q==}
     engines: {node: '>=22'}
     peerDependencies:
       react: ^18.2.0 || ^19.0.0
-      zod: ^3.23.0
+      zod: ^3.23.0 || ^4.0.0
 
   '@firsttx/prepaint@0.6.1':
     resolution: {integrity: sha512-Ywy9R8dcrkhKkwzHqVjP6i9Fe5zgU6AZAacSyhFZVG4iI58btCUI5tDfyn/Mo0OguJPLNZ//TlDc/ex0g3soAQ==}
@@ -7069,7 +7072,7 @@ snapshots:
       find-up: 5.0.0
       js-yaml: 4.1.1
 
-  '@firsttx/local-first@0.8.2(react@19.2.1)(zod@4.1.13)':
+  '@firsttx/local-first@0.8.3(react@19.2.1)(zod@4.1.13)':
     dependencies:
       react: 19.2.1
       zod: 4.1.13
@@ -11967,6 +11970,11 @@ snapshots:
     dependencies:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
+
+  sonner@2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+    dependencies:
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
 
   source-map-js@1.2.1: {}
 

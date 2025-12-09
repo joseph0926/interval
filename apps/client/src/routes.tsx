@@ -9,6 +9,13 @@ const router = createBrowserRouter([
 			{
 				index: true,
 				lazy: async () => {
+					const { HomePage } = await import("./pages/home.page");
+					return { Component: HomePage };
+				},
+			},
+			{
+				path: "onboarding",
+				lazy: async () => {
 					const { OnboardingPage } = await import("./pages/onboarding.page");
 					return { Component: OnboardingPage };
 				},
