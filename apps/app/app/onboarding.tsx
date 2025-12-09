@@ -1,32 +1,95 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import { router } from "expo-router";
+import { useRef, useCallback } from "react";
+import { View, StyleSheet, ActivityIndicator, Platform } from "react-native";
+import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useSession } from "@/hooks/useSession";
+import { useBridge, BridgeMessage } from "@/lib/bridge";
+
+function getBaseUrl(): string {
+	if (!__DEV__) {
+		return "https://interval-web.vercel.app";
+	}
+
+	if (Platform.OS === "android") {
+		return "http://10.0.2.2:3000";
+	}
+
+	return "http://localhost:3000";
+}
+
+const BASE_URL = getBaseUrl();
 
 export default function OnboardingScreen() {
+	const webViewRef = useRef<WebView>(null);
 	const { createSession } = useSession();
+	const { handleMessage } = useBridge(webViewRef);
 
-	const handleStart = async () => {
-		await createSession();
-		router.replace("/(tabs)");
-	};
+	const uri = `${BASE_URL}/onboarding`;
+
+	const injectedJS = `
+    (function() {
+      window.isNativeApp = true;
+      window.nativeAppVersion = "1.0.0";
+      true;
+    })();
+  `;
+
+	const onMessage = useCallback(
+		async (event: WebViewMessageEvent) => {
+			try {
+				const data: BridgeMessage = JSON.parse(event.nativeEvent.data);
+
+				if (data.action === "ONBOARDING_COMPLETE") {
+					await createSession();
+					router.replace("/(tabs)");
+					return;
+				}
+
+				handleMessage(data);
+			} catch (e) {
+				console.error("Failed to parse WebView message:", e);
+			}
+		},
+		[handleMessage, createSession],
+	);
+
+	const onNavigationStateChange = useCallback(
+		async (navState: { url: string }) => {
+			const url = new URL(navState.url);
+			if (url.pathname === "/" && !url.pathname.includes("onboarding")) {
+				await createSession();
+				router.replace("/(tabs)");
+			}
+		},
+		[createSession],
+	);
 
 	return (
-		<SafeAreaView style={styles.container}>
-			<View style={styles.content}>
-				<Text style={styles.title}>간격</Text>
-				<Text style={styles.subtitle}>지금 한 개비 말고, 조금 있다가 한 개비.</Text>
-				<Text style={styles.description}>
-					간격은 지금 당장 끊으라고 하지 않아요.{"\n"}
-					담배와의 '간격'을 조금씩 벌려보는{"\n"}
-					연습부터 시작해요.
-				</Text>
-			</View>
-			<View style={styles.buttonContainer}>
-				<Pressable style={styles.button} onPress={handleStart}>
-					<Text style={styles.buttonText}>시작하기</Text>
-				</Pressable>
-			</View>
+		<SafeAreaView style={styles.container} edges={["top"]}>
+			<WebView
+				ref={webViewRef}
+				source={{ uri }}
+				style={styles.webview}
+				injectedJavaScriptBeforeContentLoaded={injectedJS}
+				onMessage={onMessage}
+				onNavigationStateChange={onNavigationStateChange}
+				startInLoadingState
+				renderLoading={() => (
+					<View style={styles.loading}>
+						<ActivityIndicator size="large" color="#000" />
+					</View>
+				)}
+				cacheEnabled
+				domStorageEnabled
+				javaScriptEnabled
+				sharedCookiesEnabled
+				mixedContentMode="compatibility"
+				onError={(syntheticEvent) => {
+					const { nativeEvent } = syntheticEvent;
+					console.error("WebView error:", nativeEvent);
+				}}
+			/>
 		</SafeAreaView>
 	);
 }
@@ -36,41 +99,17 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#fff",
 	},
-	content: {
+	webview: {
 		flex: 1,
+	},
+	loading: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
 		justifyContent: "center",
 		alignItems: "center",
-		paddingHorizontal: 24,
-	},
-	title: {
-		fontSize: 48,
-		fontWeight: "bold",
-		marginBottom: 16,
-	},
-	subtitle: {
-		fontSize: 18,
-		color: "#666",
-		marginBottom: 32,
-	},
-	description: {
-		fontSize: 16,
-		color: "#888",
-		textAlign: "center",
-		lineHeight: 24,
-	},
-	buttonContainer: {
-		paddingHorizontal: 24,
-		paddingBottom: 24,
-	},
-	button: {
-		backgroundColor: "#000",
-		paddingVertical: 16,
-		borderRadius: 12,
-		alignItems: "center",
-	},
-	buttonText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "600",
+		backgroundColor: "#fff",
 	},
 });

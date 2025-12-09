@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
+import { getTodayRangeKST } from "@/lib/date-utils";
 import type { ReasonCode, RecordType, CoachingMode } from "@/prisma/generated/prisma/enums";
 
 export interface RecordSmokingInput {
@@ -30,10 +31,7 @@ export async function recordSmoking(input: RecordSmokingInput): Promise<RecordSm
 		const user = await requireUser();
 		const now = input.smokedAt ?? new Date();
 
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
+		const { start: today, end: tomorrow } = getTodayRangeKST();
 
 		const lastRecord = await prisma.smokingRecord.findFirst({
 			where: {
@@ -135,10 +133,7 @@ export async function addDelay(input: AddDelayInput): Promise<AddDelayResult> {
 	try {
 		const user = await requireUser();
 
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
+		const { start: today, end: tomorrow } = getTodayRangeKST();
 
 		const lastRecord = await prisma.smokingRecord.findFirst({
 			where: {

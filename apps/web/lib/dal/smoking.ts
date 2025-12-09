@@ -1,29 +1,27 @@
 import { cache } from "react";
 import { prisma } from "../db";
+import { getTodayRangeKST } from "../date-utils";
 import type { TodaySummary } from "@/types/home.type";
 
 export const getTodaySummary = cache(async (userId: string): Promise<TodaySummary> => {
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+	const { start: today, end: tomorrow } = getTodayRangeKST();
 
-	const tomorrow = new Date(today);
-	tomorrow.setDate(tomorrow.getDate() + 1);
-
-	const records = await prisma.smokingRecord.findMany({
-		where: {
-			userId,
-			smokedAt: {
-				gte: today,
-				lt: tomorrow,
+	const [records, user] = await Promise.all([
+		prisma.smokingRecord.findMany({
+			where: {
+				userId,
+				smokedAt: {
+					gte: today,
+					lt: tomorrow,
+				},
 			},
-		},
-		orderBy: { smokedAt: "desc" },
-	});
-
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { currentTargetInterval: true, currentMotivation: true },
-	});
+			orderBy: { smokedAt: "desc" },
+		}),
+		prisma.user.findUnique({
+			where: { id: userId },
+			select: { currentTargetInterval: true, currentMotivation: true },
+		}),
+	]);
 
 	const totalSmoked = records.length;
 	const lastSmokedAt = records[0]?.smokedAt ?? null;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { getMidnightKST } from "@/lib/date-utils";
 import type { HomeState } from "@/types/home.type";
 
 interface TimerSectionProps {
@@ -17,8 +18,7 @@ function formatTime(seconds: number): string {
 
 function formatTimeFromMidnight(): string {
 	const now = new Date();
-	const midnight = new Date(now);
-	midnight.setHours(0, 0, 0, 0);
+	const midnight = getMidnightKST();
 	const diffMs = now.getTime() - midnight.getTime();
 	const diffMins = Math.floor(diffMs / 1000 / 60);
 	const hours = Math.floor(diffMins / 60);

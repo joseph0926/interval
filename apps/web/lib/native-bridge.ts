@@ -73,6 +73,10 @@ export function triggerHaptic(
 	});
 }
 
+export function notifyOnboardingComplete(): void {
+	sendToNative({ action: "ONBOARDING_COMPLETE" });
+}
+
 type NativeMessageHandler = (payload: Record<string, unknown>) => void;
 const messageHandlers: Map<string, NativeMessageHandler[]> = new Map();
 

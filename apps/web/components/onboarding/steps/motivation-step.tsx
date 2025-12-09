@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StepTransition } from "../step-transition";
 import { ChevronLeft } from "lucide-react";
+import { notifyOnboardingComplete } from "@/lib/native-bridge";
 import type { OnboardingData } from "../onboarding-flow";
 
 interface MotivationStepProps {
@@ -31,9 +32,14 @@ export function MotivationStep({
 	onboardingData,
 	onPrev,
 }: MotivationStepProps) {
+	const handleSubmit = (formData: FormData) => {
+		notifyOnboardingComplete();
+		formAction(formData);
+	};
+
 	return (
 		<StepTransition>
-			<form action={formAction} className="flex flex-1 flex-col px-6 py-6">
+			<form action={handleSubmit} className="flex flex-1 flex-col px-6 py-6">
 				<input
 					type="hidden"
 					name="dailySmokingRange"

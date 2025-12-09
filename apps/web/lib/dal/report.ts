@@ -1,5 +1,12 @@
 import { cache } from "react";
 import { prisma } from "../db";
+import {
+	getWeekRangeKST,
+	getDateKeyKST,
+	getHoursKST,
+	isSameDayKST,
+	getTodayRangeKST,
+} from "../date-utils";
 import type {
 	ReportData,
 	WeeklySummary,
@@ -16,24 +23,9 @@ interface SmokingRecordForReport {
 	reasonCode: ReasonCode | null;
 }
 
-function getWeekRange(weeksAgo: number = 0) {
-	const now = new Date();
-	const dayOfWeek = now.getDay();
-	const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-	const monday = new Date(now);
-	monday.setDate(now.getDate() - diffToMonday - weeksAgo * 7);
-	monday.setHours(0, 0, 0, 0);
-
-	const sunday = new Date(monday);
-	sunday.setDate(monday.getDate() + 7);
-
-	return { start: monday, end: sunday };
-}
-
 export const getReportData = cache(async (userId: string): Promise<ReportData> => {
-	const thisWeek = getWeekRange(0);
-	const lastWeek = getWeekRange(1);
+	const thisWeek = getWeekRangeKST(0);
+	const lastWeek = getWeekRangeKST(1);
 
 	const [thisWeekRecords, lastWeekRecords] = await Promise.all([
 		prisma.smokingRecord.findMany({
@@ -101,12 +93,7 @@ function calculateWeeklySummary(
 	const totalDelayMinutes = thisWeekRecords.reduce((sum, r) => sum + r.delayedMinutes, 0);
 
 	const daysWithDelay = new Set(
-		thisWeekRecords
-			.filter((r) => r.delayedMinutes > 0)
-			.map((r) => {
-				const d = new Date(r.smokedAt);
-				return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-			}),
+		thisWeekRecords.filter((r) => r.delayedMinutes > 0).map((r) => getDateKeyKST(r.smokedAt)),
 	);
 
 	return {
@@ -126,17 +113,9 @@ function calculateDailyIntervals(
 	const result: DailyIntervalData[] = [];
 
 	for (let i = 0; i < 7; i++) {
-		const date = new Date(weekStart);
-		date.setDate(weekStart.getDate() + i);
+		const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
 
-		const dayRecords = records.filter((r) => {
-			const recordDate = new Date(r.smokedAt);
-			return (
-				recordDate.getFullYear() === date.getFullYear() &&
-				recordDate.getMonth() === date.getMonth() &&
-				recordDate.getDate() === date.getDate()
-			);
-		});
+		const dayRecords = records.filter((r) => isSameDayKST(r.smokedAt, date));
 
 		const intervals = dayRecords
 			.map((r) => r.intervalFromPrevious)
@@ -180,7 +159,7 @@ function calculatePeakHours(records: SmokingRecordForReport[]): TimePatternData[
 	const hourCounts = new Map<number, number>();
 
 	records.forEach((r) => {
-		const hour = new Date(r.smokedAt).getHours();
+		const hour = getHoursKST(r.smokedAt);
 		hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
 	});
 
@@ -201,20 +180,17 @@ async function calculateStreakDays(userId: string): Promise<number> {
 
 	const uniqueDays = new Set<string>();
 	records.forEach((r) => {
-		const d = new Date(r.smokedAt);
-		uniqueDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+		uniqueDays.add(getDateKeyKST(r.smokedAt));
 	});
 
 	const sortedDays = Array.from(uniqueDays).sort().reverse();
 
 	let streak = 0;
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+	const { start: todayStart } = getTodayRangeKST();
 
 	for (let i = 0; i < sortedDays.length; i++) {
-		const checkDate = new Date(today);
-		checkDate.setDate(today.getDate() - i);
-		const checkKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+		const checkDate = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
+		const checkKey = getDateKeyKST(checkDate);
 
 		if (sortedDays.includes(checkKey)) {
 			streak++;

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTodayIndexKST } from "@/lib/date-utils";
 import type { DailyIntervalData } from "@/types/report.type";
 
 interface IntervalChartProps {
@@ -7,9 +8,7 @@ interface IntervalChartProps {
 
 export function IntervalChart({ dailyIntervals }: IntervalChartProps) {
 	const maxInterval = Math.max(...dailyIntervals.map((d) => d.averageInterval ?? 0), 60);
-
-	const today = new Date();
-	const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
+	const todayIndex = getTodayIndexKST();
 
 	return (
 		<Card>
