@@ -6,10 +6,3 @@ compatibility_flags = [
   "nodejs_compat",
   "nodejs_compat_populate_process_env"
 ]
-
-[vars]
-NODE_ENV="development"
-PORT="4001"
-DATABASE_URL="postgresql://neondb_owner:npg_XEqDCILgz02h@ep-little-moon-a1r6026h-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-SESSION_SECRET="ee280ba3f0aa1c1e62b41c221ba218f9d4ccda848f5319b92bccd1cda0ece36a"
-CORS_ORIGIN="http://localhost:5173,https://interval-web.vercel.app"
