@@ -1,3 +1,5 @@
+import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
+
 export function OnboardingPage() {
-	return <div></div>;
+	return <OnboardingFlow />;
 }

@@ -2,8 +2,12 @@
 	"name": "@interval/server",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
 	"type": "module",
+	"exports": {
+		"./types": {
+			"types": "./src/app.ts"
+		}
+	},
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc",
