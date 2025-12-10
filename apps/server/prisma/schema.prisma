@@ -18,13 +18,21 @@ model User {
 
   nickname          String?
   dailySmokingRange DailySmokingRange?
-  wakeUpTime        String?
+  dayStartTime      String  @default("04:00")
 
   currentTargetInterval Int     @default(60)
   currentMotivation     String?
 
+  totalDelayMinutes Int @default(0)
+  intervalLevel     Int @default(1)
+
+  notifyOnTargetTime  Boolean @default(true)
+  notifyMorningDelay  Boolean @default(false)
+  notifyDailyReminder Boolean @default(false)
+
   smokingRecords SmokingRecord[]
   dailySnapshots DailySnapshot[]
+  badges         UserBadge[]
 
   @@index([isGuest])
 }
@@ -70,6 +78,7 @@ enum RecordType {
 }
 
 enum ReasonCode {
+  BREAK_TIME
   STRESS
   HABIT
   BORED
@@ -105,4 +114,32 @@ model DailySnapshot {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  badgeType BadgeType
+  metadata  Json?
+
+  @@unique([userId, badgeType])
+  @@index([userId])
+}
+
+enum BadgeType {
+  FIRST_DELAY
+  DAILY_10_MINUTES
+  STREAK_3_DAYS
+  STREAK_7_DAYS
+  MAX_INTERVAL_90
+  TOTAL_200_MINUTES
+  TOTAL_500_MINUTES
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
 }

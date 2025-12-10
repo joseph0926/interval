@@ -10,10 +10,13 @@ const updateSettingsSchema = z.object({
 	nickname: z.string().min(1).max(20).optional(),
 	currentTargetInterval: z.number().min(30).max(180).optional(),
 	currentMotivation: z.string().max(200).optional(),
-	wakeUpTime: z
+	dayStartTime: z
 		.string()
 		.regex(/^\d{2}:\d{2}$/)
 		.optional(),
+	notifyOnTargetTime: z.boolean().optional(),
+	notifyMorningDelay: z.boolean().optional(),
+	notifyDailyReminder: z.boolean().optional(),
 });
 
 export const settingsRoutes = new Hono()
@@ -28,9 +31,12 @@ export const settingsRoutes = new Hono()
 				select: {
 					nickname: true,
 					dailySmokingRange: true,
-					wakeUpTime: true,
+					dayStartTime: true,
 					currentTargetInterval: true,
 					currentMotivation: true,
+					notifyOnTargetTime: true,
+					notifyMorningDelay: true,
+					notifyDailyReminder: true,
 				},
 			});
 
@@ -58,9 +64,12 @@ export const settingsRoutes = new Hono()
 				select: {
 					nickname: true,
 					dailySmokingRange: true,
-					wakeUpTime: true,
+					dayStartTime: true,
 					currentTargetInterval: true,
 					currentMotivation: true,
+					notifyOnTargetTime: true,
+					notifyMorningDelay: true,
+					notifyDailyReminder: true,
 				},
 			});
 

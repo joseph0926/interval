@@ -10,7 +10,7 @@ const dailySmokingRangeEnum = z.enum(["UNDER_5", "FROM_5_10", "FROM_10_20", "OVE
 
 const onboardingSchema = z.object({
 	dailySmokingRange: dailySmokingRangeEnum,
-	wakeUpTime: z
+	dayStartTime: z
 		.string()
 		.regex(/^\d{2}:\d{2}$/)
 		.optional(),
@@ -86,7 +86,7 @@ export const onboardingRoutes = new Hono()
 				where: { id: userId },
 				data: {
 					dailySmokingRange: data.dailySmokingRange,
-					wakeUpTime: data.wakeUpTime,
+					dayStartTime: data.dayStartTime,
 					currentTargetInterval: data.targetInterval,
 					currentMotivation: data.motivation,
 					nickname: data.nickname,
@@ -96,7 +96,7 @@ export const onboardingRoutes = new Hono()
 					isGuest: true,
 					nickname: true,
 					dailySmokingRange: true,
-					wakeUpTime: true,
+					dayStartTime: true,
 					currentTargetInterval: true,
 					currentMotivation: true,
 				},

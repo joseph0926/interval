@@ -27,9 +27,30 @@ export function OnboardingFlow() {
 	const isFirstStep = stepIndex === 0;
 	const isLastStep = stepIndex === STEPS.length - 1;
 
-	const goNext = () => {
+	const goNext = async () => {
 		if (!isLastStep) {
 			setCurrentStep(STEPS[stepIndex + 1]);
+		}
+	};
+
+	const handleStart = async () => {
+		setIsPending(true);
+		try {
+			const meRes = await api.api.auth.me.$get();
+			const meData = await meRes.json();
+
+			if (!meData.user) {
+				const guestRes = await api.api.auth.guest.$post();
+				if (!guestRes.ok) {
+					throw new Error("계정 생성에 실패했습니다");
+				}
+			}
+
+			goNext();
+		} catch {
+			setError("시작하는 중 오류가 발생했습니다. 다시 시도해주세요.");
+		} finally {
+			setIsPending(false);
 		}
 	};
 
@@ -80,7 +101,9 @@ export function OnboardingFlow() {
 			)}
 			<div className="flex flex-1 flex-col">
 				<AnimatePresence mode="wait">
-					{currentStep === "welcome" && <WelcomeStep key="welcome" onNext={goNext} />}
+					{currentStep === "welcome" && (
+						<WelcomeStep key="welcome" onNext={handleStart} isPending={isPending} />
+					)}
 					{currentStep === "smoking-amount" && (
 						<SmokingAmountStep
 							key="smoking-amount"

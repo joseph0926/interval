@@ -3,9 +3,10 @@ import { StepTransition } from "../step-transition";
 
 interface WelcomeStepProps {
 	onNext: () => void;
+	isPending?: boolean;
 }
 
-export function WelcomeStep({ onNext }: WelcomeStepProps) {
+export function WelcomeStep({ onNext, isPending }: WelcomeStepProps) {
 	return (
 		<StepTransition>
 			<div className="flex flex-1 flex-col justify-between px-6 py-12">
@@ -22,8 +23,13 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
 						</p>
 					</div>
 				</div>
-				<Button size="lg" className="w-full rounded-xl py-6 text-base font-medium" onClick={onNext}>
-					시작하기
+				<Button
+					size="lg"
+					className="w-full rounded-xl py-6 text-base font-medium"
+					onClick={onNext}
+					disabled={isPending}
+				>
+					{isPending ? "준비 중..." : "시작하기"}
 				</Button>
 			</div>
 		</StepTransition>

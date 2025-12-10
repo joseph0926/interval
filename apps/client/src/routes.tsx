@@ -12,7 +12,7 @@ async function authLoader() {
 		}
 
 		const hasCompletedOnboarding =
-			data.user.currentTargetInterval !== null && data.user.wakeUpTime !== null;
+			data.user.currentTargetInterval !== null && data.user.dailySmokingRange !== null;
 
 		if (!hasCompletedOnboarding) {
 			return redirect("/onboarding");

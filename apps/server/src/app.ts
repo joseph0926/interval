@@ -13,6 +13,7 @@ import { settingsRoutes } from "./routes/settings";
 import { authRoutes } from "./routes/auth";
 import { reportRoutes } from "./routes/report";
 import { onboardingRoutes } from "./routes/onboarding";
+import { gamificationRoutes } from "./routes/gamification";
 
 const app = new Hono()
 	.use("*", logger())
@@ -32,7 +33,8 @@ const app = new Hono()
 	.route("/api/smoking", smokingRoutes)
 	.route("/api/settings", settingsRoutes)
 	.route("/api/report", reportRoutes)
-	.route("/api/onboarding", onboardingRoutes);
+	.route("/api/onboarding", onboardingRoutes)
+	.route("/api/gamification", gamificationRoutes);
 
 export type AppType = typeof app;
 export { app };

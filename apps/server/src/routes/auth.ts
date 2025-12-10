@@ -55,7 +55,7 @@ export const authRoutes = new Hono()
 					nickname: true,
 					email: true,
 					dailySmokingRange: true,
-					wakeUpTime: true,
+					dayStartTime: true,
 					currentTargetInterval: true,
 					currentMotivation: true,
 				},

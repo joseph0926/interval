@@ -5,14 +5,15 @@ import { db } from "../lib/db";
 import { authMiddleware } from "../middleware/auth";
 import { zodErrorHook } from "../lib/zod-hook";
 import { Errors } from "../lib/errors";
+import { getUserDayBoundary, getKSTStartOfDay } from "../lib/date";
 
 const reasonCodeEnum = z.enum([
+	"BREAK_TIME",
 	"STRESS",
 	"HABIT",
 	"BORED",
 	"SOCIAL",
 	"AFTER_MEAL",
-	"BREAK_TIME",
 	"OTHER",
 ]);
 
@@ -30,27 +31,11 @@ const addDelaySchema = z.object({
 	minutes: z.number().min(1).max(30),
 });
 
-function getKSTDateString(date: Date): string {
-	const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-	return kst.toISOString().split("T")[0];
-}
-
-function getKSTStartOfDay(dateStr: string): Date {
-	return new Date(`${dateStr}T00:00:00+09:00`);
-}
-
-function getKSTEndOfDay(dateStr: string): Date {
-	return new Date(`${dateStr}T23:59:59.999+09:00`);
-}
-
 export const smokingRoutes = new Hono()
 	.use("*", authMiddleware)
 
 	.get("/today", async (c) => {
 		const userId = c.get("userId");
-		const today = getKSTDateString(new Date());
-		const startOfDay = getKSTStartOfDay(today);
-		const endOfDay = getKSTEndOfDay(today);
 
 		try {
 			const user = await db.user.findUnique({
@@ -58,8 +43,12 @@ export const smokingRoutes = new Hono()
 				select: {
 					currentTargetInterval: true,
 					currentMotivation: true,
+					dayStartTime: true,
 				},
 			});
+
+			const dayStartTime = user?.dayStartTime ?? "04:00";
+			const { start: startOfDay, end: endOfDay } = getUserDayBoundary(new Date(), dayStartTime);
 
 			const records = await db.smokingRecord.findMany({
 				where: {
@@ -109,6 +98,7 @@ export const smokingRoutes = new Hono()
 					firstSmokedAt: firstRecord?.smokedAt.toISOString() ?? null,
 					nextTargetTime,
 					earlyCount,
+					dayStartTime,
 				},
 			});
 		} catch {
@@ -124,11 +114,15 @@ export const smokingRoutes = new Hono()
 		try {
 			const user = await db.user.findUnique({
 				where: { id: userId },
-				select: { currentTargetInterval: true },
+				select: {
+					currentTargetInterval: true,
+					dayStartTime: true,
+					totalDelayMinutes: true,
+				},
 			});
 
-			const today = getKSTDateString(smokedAt);
-			const startOfDay = getKSTStartOfDay(today);
+			const dayStartTime = user?.dayStartTime ?? "04:00";
+			const { start: startOfDay, dateStr } = getUserDayBoundary(smokedAt, dayStartTime);
 
 			const lastRecord = await db.smokingRecord.findFirst({
 				where: {
@@ -153,8 +147,8 @@ export const smokingRoutes = new Hono()
 					userId,
 					smokedAt,
 					type: data.type,
-					reasonCode: data.reasonCode === "BREAK_TIME" ? "OTHER" : data.reasonCode,
-					reasonText: data.reasonCode === "BREAK_TIME" ? "쉬는 시간" : data.reasonText,
+					reasonCode: data.reasonCode,
+					reasonText: data.reasonText,
 					coachingMode: data.coachingMode,
 					emotionNote: data.emotionNote,
 					delayedMinutes: data.delayedMinutes,
@@ -164,7 +158,16 @@ export const smokingRoutes = new Hono()
 				},
 			});
 
-			await updateDailySnapshot(userId, today);
+			if (data.delayedMinutes > 0) {
+				await db.user.update({
+					where: { id: userId },
+					data: {
+						totalDelayMinutes: { increment: data.delayedMinutes },
+					},
+				});
+			}
+
+			await updateDailySnapshot(userId, dateStr, dayStartTime);
 
 			return c.json({
 				success: true,
@@ -185,23 +188,39 @@ export const smokingRoutes = new Hono()
 	.post("/delay", zValidator("json", addDelaySchema, zodErrorHook), async (c) => {
 		const userId = c.get("userId");
 		const { minutes } = c.req.valid("json");
-		const today = getKSTDateString(new Date());
 
 		try {
-			const snapshot = await db.dailySnapshot.upsert({
-				where: { userId_date: { userId, date: getKSTStartOfDay(today) } },
-				create: {
-					userId,
-					date: getKSTStartOfDay(today),
-					targetInterval: 60,
-					totalDelayMinutes: minutes,
-					hasDelaySuccess: true,
-				},
-				update: {
-					totalDelayMinutes: { increment: minutes },
-					hasDelaySuccess: true,
-				},
+			const user = await db.user.findUnique({
+				where: { id: userId },
+				select: { dayStartTime: true, currentTargetInterval: true },
 			});
+
+			const dayStartTime = user?.dayStartTime ?? "04:00";
+			const { dateStr } = getUserDayBoundary(new Date(), dayStartTime);
+			const snapshotDate = getKSTStartOfDay(dateStr);
+
+			const [snapshot] = await Promise.all([
+				db.dailySnapshot.upsert({
+					where: { userId_date: { userId, date: snapshotDate } },
+					create: {
+						userId,
+						date: snapshotDate,
+						targetInterval: user?.currentTargetInterval ?? 60,
+						totalDelayMinutes: minutes,
+						hasDelaySuccess: true,
+					},
+					update: {
+						totalDelayMinutes: { increment: minutes },
+						hasDelaySuccess: true,
+					},
+				}),
+				db.user.update({
+					where: { id: userId },
+					data: {
+						totalDelayMinutes: { increment: minutes },
+					},
+				}),
+			]);
 
 			return c.json({
 				success: true,
@@ -245,11 +264,105 @@ export const smokingRoutes = new Hono()
 		} catch {
 			throw Errors.database("흡연 기록 조회에 실패했습니다");
 		}
-	});
+	})
 
-async function updateDailySnapshot(userId: string, dateStr: string) {
-	const startOfDay = getKSTStartOfDay(dateStr);
-	const endOfDay = getKSTEndOfDay(dateStr);
+	.get("/check-gap", async (c) => {
+		const userId = c.get("userId");
+
+		try {
+			const user = await db.user.findUnique({
+				where: { id: userId },
+				select: { dayStartTime: true, currentTargetInterval: true },
+			});
+
+			const lastRecord = await db.smokingRecord.findFirst({
+				where: { userId },
+				orderBy: { smokedAt: "desc" },
+			});
+
+			if (!lastRecord) {
+				return c.json({
+					success: true,
+					data: { hasGap: false, gapMinutes: 0, threshold: 0 },
+				});
+			}
+
+			const now = new Date();
+			const gapMinutes = Math.round((now.getTime() - lastRecord.smokedAt.getTime()) / (1000 * 60));
+
+			const targetInterval = user?.currentTargetInterval ?? 60;
+			const threshold = Math.max(targetInterval * 2, 150);
+
+			return c.json({
+				success: true,
+				data: {
+					hasGap: gapMinutes >= threshold,
+					gapMinutes,
+					threshold,
+					lastSmokedAt: lastRecord.smokedAt.toISOString(),
+				},
+			});
+		} catch {
+			throw Errors.database("갭 확인에 실패했습니다");
+		}
+	})
+
+	.post(
+		"/soft-reset",
+		zValidator(
+			"json",
+			z.object({
+				approximateCount: z.number().min(0).max(50).optional(),
+			}),
+			zodErrorHook,
+		),
+		async (c) => {
+			const userId = c.get("userId");
+			const { approximateCount } = c.req.valid("json");
+
+			try {
+				const user = await db.user.findUnique({
+					where: { id: userId },
+					select: { dayStartTime: true, currentTargetInterval: true },
+				});
+
+				const dayStartTime = user?.dayStartTime ?? "04:00";
+				const now = new Date();
+				const { dateStr } = getUserDayBoundary(now, dayStartTime);
+				const snapshotDate = getKSTStartOfDay(dateStr);
+
+				if (approximateCount !== undefined && approximateCount > 0) {
+					await db.dailySnapshot.upsert({
+						where: { userId_date: { userId, date: snapshotDate } },
+						create: {
+							userId,
+							date: snapshotDate,
+							targetInterval: user?.currentTargetInterval ?? 60,
+							totalSmoked: approximateCount,
+						},
+						update: {
+							totalSmoked: { increment: approximateCount },
+						},
+					});
+				}
+
+				return c.json({
+					success: true,
+					message: "지금부터 다시 시작합니다",
+					resetAt: now.toISOString(),
+				});
+			} catch {
+				throw Errors.database("소프트 리셋에 실패했습니다");
+			}
+		},
+	);
+
+async function updateDailySnapshot(userId: string, dateStr: string, dayStartTime: string) {
+	const { start: startOfDay, end: endOfDay } = getUserDayBoundary(
+		new Date(`${dateStr}T12:00:00+09:00`),
+		dayStartTime,
+	);
+	const snapshotDate = getKSTStartOfDay(dateStr);
 
 	const records = await db.smokingRecord.findMany({
 		where: {
@@ -282,10 +395,10 @@ async function updateDailySnapshot(userId: string, dateStr: string) {
 	});
 
 	await db.dailySnapshot.upsert({
-		where: { userId_date: { userId, date: startOfDay } },
+		where: { userId_date: { userId, date: snapshotDate } },
 		create: {
 			userId,
-			date: startOfDay,
+			date: snapshotDate,
 			targetInterval: user?.currentTargetInterval ?? 60,
 			motivation: user?.currentMotivation,
 			totalSmoked,
