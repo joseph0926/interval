@@ -45,8 +45,3 @@ pnpm typecheck
 # apps/web/.env
 DATABASE_URL="postgresql://..."
 ```
-
-## 링크
-
-- Web: https://interval-web.vercel.app
-- 기획서: [docs/plan.md](docs/plan.md)
