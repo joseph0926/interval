@@ -16,7 +16,7 @@
 		"db:mig": "prisma migrate dev",
 		"db:stu": "prisma studio",
 		"dev:cf": "wrangler dev",
-		"deploy": "wrangler deploy"
+		"deploy": "pnpm db:gen && wrangler deploy"
 	},
 	"packageManager": "pnpm@10.24.0",
 	"dependencies": {
