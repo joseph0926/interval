@@ -5,13 +5,7 @@ import { api } from "@/lib/api";
 import type { UserSettings } from "@/types/settings.type";
 
 async function fetchSettings(): Promise<UserSettings> {
-	const [settingsRes, authRes] = await Promise.all([
-		api.api.settings.$get(),
-		api.api.auth.me.$get(),
-	]);
-
-	const settingsJson = await settingsRes.json();
-	const authJson = await authRes.json();
+	const [settingsJson, authJson] = await Promise.all([api.settings.get(), api.auth.me()]);
 
 	const settings = settingsJson.settings;
 	const user = authJson.user;

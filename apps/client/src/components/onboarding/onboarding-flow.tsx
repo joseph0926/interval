@@ -36,14 +36,10 @@ export function OnboardingFlow() {
 	const handleStart = async () => {
 		setIsPending(true);
 		try {
-			const meRes = await api.api.auth.me.$get();
-			const meData = await meRes.json();
+			const meData = await api.auth.me();
 
 			if (!meData.user) {
-				const guestRes = await api.api.auth.guest.$post();
-				if (!guestRes.ok) {
-					throw new Error("계정 생성에 실패했습니다");
-				}
+				await api.auth.guest();
 			}
 
 			goNext();
@@ -71,15 +67,13 @@ export function OnboardingFlow() {
 		setError(undefined);
 
 		try {
-			const res = await api.api.onboarding.complete.$post({
-				json: {
-					dailySmokingRange: data.dailySmokingRange,
-					targetInterval: data.targetInterval,
-					motivation: data.motivation || undefined,
-				},
+			const res = await api.onboarding.complete({
+				dailySmokingRange: data.dailySmokingRange,
+				targetInterval: data.targetInterval,
+				motivation: data.motivation || undefined,
 			});
 
-			if (!res.ok) {
+			if (!res.success) {
 				throw new Error("온보딩 저장에 실패했습니다");
 			}
 

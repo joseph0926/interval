@@ -5,8 +5,7 @@ import { api } from "./lib/api";
 
 async function authLoader() {
 	try {
-		const res = await api.api.auth.me.$get();
-		const data = await res.json();
+		const data = await api.auth.me();
 
 		if (!data.user) {
 			return redirect("/onboarding");

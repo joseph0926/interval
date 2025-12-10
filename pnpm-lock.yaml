@@ -175,9 +175,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      hono:
-        specifier: ^4.10.8
-        version: 4.10.8
       lucide-react:
         specifier: ^0.556.0
         version: 0.556.0(react@19.2.1)
@@ -212,9 +209,6 @@ importers:
       '@eslint/js':
         specifier: ^9.39.1
         version: 9.39.1
-      '@interval/server':
-        specifier: workspace:*
-        version: link:../server
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.2

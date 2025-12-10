@@ -31,8 +31,7 @@ const itemVariants = {
 } satisfies Variants;
 
 async function fetchTodaySummary() {
-	const res = await api.api.smoking.today.$get();
-	const json = await res.json();
+	const json = await api.smoking.today();
 	return json.data;
 }
 

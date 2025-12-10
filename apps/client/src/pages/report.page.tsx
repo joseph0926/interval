@@ -8,13 +8,7 @@ import type { ReasonCode } from "@/types/smoking.type";
 const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
 
 async function fetchReportData(): Promise<ReportData> {
-	const [weeklyRes, streakRes] = await Promise.all([
-		api.api.report.weekly.$get(),
-		api.api.report.streak.$get(),
-	]);
-
-	const weeklyJson = await weeklyRes.json();
-	const streakJson = await streakRes.json();
+	const [weeklyJson, streakJson] = await Promise.all([api.report.weekly(), api.report.streak()]);
 
 	const weeklyData = weeklyJson.data;
 	const streakData = streakJson.data;
