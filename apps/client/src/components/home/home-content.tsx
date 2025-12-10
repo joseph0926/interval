@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { motion, type Variants } from "motion/react";
 import { useSyncedModel } from "@firsttx/local-first";
 import { HomeHeader } from "./home-header";
 import { TimerSection } from "./timer-section";
 import { TodaySummaryCard } from "./today-summary-card";
 import { SmokingButton } from "./smoking-button";
+import { SmokingDrawer } from "@/components/smoking/smoking-drawer";
 import { TodaySummaryModel } from "@/models/today-summary.model";
 import { api } from "@/lib/api";
 import type { HomeState } from "@/types/home.type";
@@ -36,7 +37,12 @@ async function fetchTodaySummary() {
 }
 
 export function HomeContent() {
-	const { data: summary, status } = useSyncedModel(TodaySummaryModel, fetchTodaySummary, {
+	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const {
+		data: summary,
+		status,
+		sync,
+	} = useSyncedModel(TodaySummaryModel, fetchTodaySummary, {
 		syncOnMount: "always",
 	});
 
@@ -61,41 +67,59 @@ export function HomeContent() {
 		};
 	}, [summary?.lastSmokedAt, summary?.targetInterval]);
 
-	const handleSmokingPress = () => {
-		// TODO: 흡연 기록 Drawer 열기
-		console.log("smoking button pressed");
-	};
+	const handleSmokingPress = useCallback(() => {
+		setIsDrawerOpen(true);
+	}, []);
+
+	const handleDrawerOpenChange = useCallback(
+		(open: boolean) => {
+			setIsDrawerOpen(open);
+			if (!open) {
+				sync();
+			}
+		},
+		[sync],
+	);
 
 	if (status === "loading" || !summary) {
 		return <HomeContentSkeleton />;
 	}
 
 	return (
-		<motion.div
-			variants={containerVariants}
-			initial="hidden"
-			animate="visible"
-			className="flex flex-1 flex-col"
-		>
-			<motion.div variants={itemVariants} className="px-6 pt-12">
-				<HomeHeader state={homeState} summary={summary} />
-			</motion.div>
-
+		<>
 			<motion.div
-				variants={itemVariants}
-				className="flex flex-1 items-center justify-center px-6 py-8"
+				variants={containerVariants}
+				initial="hidden"
+				animate="visible"
+				className="flex flex-1 flex-col"
 			>
-				<TimerSection state={homeState} targetInterval={summary.targetInterval} />
+				<motion.div variants={itemVariants} className="px-6 pt-12">
+					<HomeHeader state={homeState} summary={summary} />
+				</motion.div>
+
+				<motion.div
+					variants={itemVariants}
+					className="flex flex-1 items-center justify-center px-6 py-8"
+				>
+					<TimerSection state={homeState} targetInterval={summary.targetInterval} />
+				</motion.div>
+
+				<motion.div variants={itemVariants} className="px-6 pb-6">
+					<TodaySummaryCard summary={summary} />
+				</motion.div>
+
+				<motion.div variants={itemVariants} className="px-6 pb-6">
+					<SmokingButton state={homeState} onPress={handleSmokingPress} />
+				</motion.div>
 			</motion.div>
 
-			<motion.div variants={itemVariants} className="px-6 pb-6">
-				<TodaySummaryCard summary={summary} />
-			</motion.div>
-
-			<motion.div variants={itemVariants} className="px-6 pb-6">
-				<SmokingButton state={homeState} onPress={handleSmokingPress} />
-			</motion.div>
-		</motion.div>
+			<SmokingDrawer
+				open={isDrawerOpen}
+				onOpenChange={handleDrawerOpenChange}
+				state={homeState}
+				summary={summary}
+			/>
+		</>
 	);
 }
 

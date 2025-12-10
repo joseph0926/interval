@@ -28,3 +28,23 @@ export function formatTimeFromMidnight(): string {
 	const mins = diffMins % 60;
 	return `${hours}시간 ${mins}분`;
 }
+
+export function formatWeekRange(): string {
+	const now = new Date();
+	const dayOfWeek = now.getDay();
+	const monday = new Date(now);
+	monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+	const sunday = new Date(monday);
+	sunday.setDate(monday.getDate() + 6);
+
+	const format = (d: Date) =>
+		new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(d);
+
+	return `${format(monday)} ~ ${format(sunday)}`;
+}
+
+export function getTodayIndex(): number {
+	const day = new Date().getDay();
+	return day === 0 ? 6 : day - 1;
+}

@@ -1,5 +1,6 @@
 import { createBrowserRouter, redirect } from "react-router";
 import { RootLayout } from "./layouts/root.layout";
+import { MainLayout } from "./layouts/main.layout";
 import { api } from "./lib/api";
 
 async function authLoader() {
@@ -30,12 +31,31 @@ const router = createBrowserRouter([
 		element: <RootLayout />,
 		children: [
 			{
-				index: true,
+				element: <MainLayout />,
 				loader: authLoader,
-				lazy: async () => {
-					const { HomePage } = await import("./pages/home.page");
-					return { Component: HomePage };
-				},
+				children: [
+					{
+						index: true,
+						lazy: async () => {
+							const { HomePage } = await import("./pages/home.page");
+							return { Component: HomePage };
+						},
+					},
+					{
+						path: "report",
+						lazy: async () => {
+							const { ReportPage } = await import("./pages/report.page");
+							return { Component: ReportPage };
+						},
+					},
+					{
+						path: "settings",
+						lazy: async () => {
+							const { SettingsPage } = await import("./pages/settings.page");
+							return { Component: SettingsPage };
+						},
+					},
+				],
 			},
 			{
 				path: "onboarding",
