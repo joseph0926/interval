@@ -63,21 +63,27 @@ export const reportRoutes = new Hono()
 			]);
 
 			const thisWeekIntervals = thisWeekRecords
-				.map((r) => r.intervalFromPrevious)
-				.filter((i): i is number => i !== null);
+				.map((r: { intervalFromPrevious: number | null }) => r.intervalFromPrevious)
+				.filter((i: number | null): i is number => i !== null);
 
 			const lastWeekIntervals = lastWeekRecords
-				.map((r) => r.intervalFromPrevious)
-				.filter((i): i is number => i !== null);
+				.map((r: { intervalFromPrevious: number | null }) => r.intervalFromPrevious)
+				.filter((i: number | null): i is number => i !== null);
 
 			const thisWeekAvgInterval =
 				thisWeekIntervals.length > 0
-					? Math.round(thisWeekIntervals.reduce((a, b) => a + b, 0) / thisWeekIntervals.length)
+					? Math.round(
+							thisWeekIntervals.reduce((a: number, b: number) => a + b, 0) /
+								thisWeekIntervals.length,
+						)
 					: null;
 
 			const lastWeekAvgInterval =
 				lastWeekIntervals.length > 0
-					? Math.round(lastWeekIntervals.reduce((a, b) => a + b, 0) / lastWeekIntervals.length)
+					? Math.round(
+							lastWeekIntervals.reduce((a: number, b: number) => a + b, 0) /
+								lastWeekIntervals.length,
+						)
 					: null;
 
 			const intervalChange =
@@ -85,11 +91,14 @@ export const reportRoutes = new Hono()
 					? thisWeekAvgInterval - lastWeekAvgInterval
 					: null;
 
-			const thisWeekTotalDelay = thisWeekSnapshots.reduce((sum, s) => sum + s.totalDelayMinutes, 0);
+			const thisWeekTotalDelay = thisWeekSnapshots.reduce(
+				(sum: number, s: { totalDelayMinutes: number }) => sum + s.totalDelayMinutes,
+				0,
+			);
 			const thisWeekTotalSmoked = thisWeekRecords.length;
 
 			const reasonCounts: Record<string, number> = {};
-			thisWeekRecords.forEach((r) => {
+			thisWeekRecords.forEach((r: { reasonCode: string | null }) => {
 				const reason = r.reasonCode ?? "OTHER";
 				reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
 			});
@@ -105,7 +114,7 @@ export const reportRoutes = new Hono()
 				}));
 
 			const hourBuckets: Record<string, { count: number; totalInterval: number }> = {};
-			thisWeekRecords.forEach((r) => {
+			thisWeekRecords.forEach((r: { smokedAt: Date; intervalFromPrevious: number | null }) => {
 				const bucket = getHourBucket(r.smokedAt);
 				if (!hourBuckets[bucket]) {
 					hourBuckets[bucket] = { count: 0, totalInterval: 0 };
@@ -132,14 +141,23 @@ export const reportRoutes = new Hono()
 
 			const worstHour = peakHours[0] ?? null;
 
-			const delaySuccessDays = thisWeekSnapshots.filter((s) => s.hasDelaySuccess).length;
+			const delaySuccessDays = thisWeekSnapshots.filter(
+				(s: { hasDelaySuccess: boolean }) => s.hasDelaySuccess,
+			).length;
 
-			const dailyStats = thisWeekSnapshots.map((s) => ({
-				date: s.date.toISOString().split("T")[0],
-				totalSmoked: s.totalSmoked,
-				averageInterval: s.averageInterval ? Math.round(s.averageInterval) : null,
-				totalDelayMinutes: s.totalDelayMinutes,
-			}));
+			const dailyStats = thisWeekSnapshots.map(
+				(s: {
+					date: Date;
+					totalSmoked: number;
+					averageInterval: number | null;
+					totalDelayMinutes: number;
+				}) => ({
+					date: s.date.toISOString().split("T")[0],
+					totalSmoked: s.totalSmoked,
+					averageInterval: s.averageInterval ? Math.round(s.averageInterval) : null,
+					totalDelayMinutes: s.totalDelayMinutes,
+				}),
+			);
 
 			return c.json({
 				success: true,
@@ -196,7 +214,7 @@ export const reportRoutes = new Hono()
 			}
 
 			const hourBuckets: Record<string, number> = {};
-			records.forEach((r) => {
+			records.forEach((r: { smokedAt: Date }) => {
 				const bucket = getHourBucket(r.smokedAt);
 				hourBuckets[bucket] = (hourBuckets[bucket] ?? 0) + 1;
 			});
@@ -204,7 +222,7 @@ export const reportRoutes = new Hono()
 			const peakHour = Object.entries(hourBuckets).sort((a, b) => b[1] - a[1])[0];
 
 			const reasonCounts: Record<string, number> = {};
-			records.forEach((r) => {
+			records.forEach((r: { reasonCode: string | null }) => {
 				const reason = r.reasonCode ?? "OTHER";
 				reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
 			});
@@ -271,8 +289,8 @@ export const reportRoutes = new Hono()
 				.split("T")[0];
 
 			const sortedDates = snapshots
-				.map((s) => s.date.toISOString().split("T")[0])
-				.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+				.map((s: { date: Date }) => s.date.toISOString().split("T")[0])
+				.sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
 
 			let currentStreak = 0;
 			let longestStreak = 0;

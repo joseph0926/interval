@@ -3,6 +3,7 @@ import { ReportContent } from "@/components/report/report-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import type { ReportData, DailyIntervalData } from "@/types/report.type";
+import type { ReasonCode } from "@/types/smoking.type";
 
 const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -53,7 +54,7 @@ async function fetchReportData(): Promise<ReportData> {
 		reasonBreakdown:
 			weeklyData?.patterns?.topReasons?.map(
 				(r: { reason: string; count: number; percentage: number }) => ({
-					reasonCode: r.reason,
+					reasonCode: r.reason as ReasonCode,
 					count: r.count,
 					percentage: Math.round(r.percentage),
 				}),

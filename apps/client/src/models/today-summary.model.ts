@@ -11,6 +11,7 @@ const todaySummarySchema = z.object({
 	firstSmokedAt: z.string().nullable(),
 	nextTargetTime: z.string().nullable(),
 	earlyCount: z.number(),
+	dayStartTime: z.string(),
 });
 
 export const TodaySummaryModel = defineModel("todaySummary", {
@@ -26,5 +27,6 @@ export const TodaySummaryModel = defineModel("todaySummary", {
 		firstSmokedAt: null,
 		nextTargetTime: null,
 		earlyCount: 0,
+		dayStartTime: "04:00",
 	},
 });

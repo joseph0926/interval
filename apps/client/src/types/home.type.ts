@@ -1,9 +1,15 @@
-import type { InferResponseType } from "hono/client";
-import type { api } from "@/lib/api";
-
-type TodayResponse = InferResponseType<typeof api.api.smoking.today.$get>;
-
-export type TodaySummary = TodayResponse["data"];
+export interface TodaySummary {
+	totalSmoked: number;
+	averageInterval: number | null;
+	totalDelayMinutes: number;
+	targetInterval: number;
+	motivation: string | null;
+	lastSmokedAt: string | null;
+	firstSmokedAt: string | null;
+	nextTargetTime: string | null;
+	earlyCount: number;
+	dayStartTime: string;
+}
 
 export type HomeState =
 	| { type: "BEFORE_FIRST" }

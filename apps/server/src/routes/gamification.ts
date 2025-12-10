@@ -167,7 +167,9 @@ export const gamificationRoutes = new Hono()
 			}
 
 			const badgeList = BADGE_DEFINITIONS.map((def) => {
-				const earned = user.badges.find((b) => b.badgeType === def.type);
+				const earned = user.badges.find(
+					(b: { badgeType: string; createdAt: Date }) => b.badgeType === def.type,
+				);
 				return {
 					type: def.type,
 					name: def.name,
@@ -240,8 +242,8 @@ export const gamificationRoutes = new Hono()
 
 			let currentStreak = 0;
 			const sortedDates = recentSnapshots
-				.map((s) => s.date.toISOString().split("T")[0])
-				.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+				.map((s: { date: Date }) => s.date.toISOString().split("T")[0])
+				.sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
 
 			if (sortedDates.length > 0) {
 				const todayStr = now.toISOString().split("T")[0];
@@ -268,7 +270,9 @@ export const gamificationRoutes = new Hono()
 				level: calculatedLevel,
 			};
 
-			const existingBadgeTypes = new Set(user.badges.map((b) => b.badgeType));
+			const existingBadgeTypes = new Set(
+				user.badges.map((b: { badgeType: string }) => b.badgeType),
+			);
 			const newBadges: { type: BadgeType; name: string; description: string }[] = [];
 
 			for (const def of BADGE_DEFINITIONS) {

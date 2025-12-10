@@ -59,17 +59,22 @@ export const smokingRoutes = new Hono()
 			});
 
 			const totalSmoked = records.length;
-			const totalDelayMinutes = records.reduce((sum, r) => sum + r.delayedMinutes, 0);
+			const totalDelayMinutes = records.reduce(
+				(sum: number, r: { delayedMinutes: number }) => sum + r.delayedMinutes,
+				0,
+			);
 
 			let averageInterval: number | null = null;
 			if (records.length >= 2) {
 				const intervals = records
 					.slice(1)
-					.map((r) => r.intervalFromPrevious)
-					.filter((i): i is number => i !== null);
+					.map((r: { intervalFromPrevious: number | null }) => r.intervalFromPrevious)
+					.filter((i: number | null): i is number => i !== null);
 
 				if (intervals.length > 0) {
-					averageInterval = Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length);
+					averageInterval = Math.round(
+						intervals.reduce((a: number, b: number) => a + b, 0) / intervals.length,
+					);
 				}
 			}
 
@@ -84,7 +89,7 @@ export const smokingRoutes = new Hono()
 				nextTargetTime = next.toISOString();
 			}
 
-			const earlyCount = records.filter((r) => r.type === "EARLY").length;
+			const earlyCount = records.filter((r: { type: string }) => r.type === "EARLY").length;
 
 			return c.json({
 				success: true,
@@ -256,10 +261,21 @@ export const smokingRoutes = new Hono()
 
 			return c.json({
 				success: true,
-				records: records.map((r) => ({
-					...r,
-					smokedAt: r.smokedAt.toISOString(),
-				})),
+				records: records.map(
+					(r: {
+						id: string;
+						smokedAt: Date;
+						type: string;
+						reasonCode: string | null;
+						reasonText: string | null;
+						intervalFromPrevious: number | null;
+						wasOnTarget: boolean | null;
+						delayedMinutes: number;
+					}) => ({
+						...r,
+						smokedAt: r.smokedAt.toISOString(),
+					}),
+				),
 			});
 		} catch {
 			throw Errors.database("흡연 기록 조회에 실패했습니다");
@@ -373,18 +389,21 @@ async function updateDailySnapshot(userId: string, dateStr: string, dayStartTime
 	});
 
 	const totalSmoked = records.length;
-	const totalDelayMinutes = records.reduce((sum, r) => sum + r.delayedMinutes, 0);
+	const totalDelayMinutes = records.reduce(
+		(sum: number, r: { delayedMinutes: number }) => sum + r.delayedMinutes,
+		0,
+	);
 	const hasDelaySuccess = totalDelayMinutes > 0;
 
 	let averageInterval: number | null = null;
 	if (records.length >= 2) {
 		const intervals = records
 			.slice(1)
-			.map((r) => r.intervalFromPrevious)
-			.filter((i): i is number => i !== null);
+			.map((r: { intervalFromPrevious: number | null }) => r.intervalFromPrevious)
+			.filter((i: number | null): i is number => i !== null);
 
 		if (intervals.length > 0) {
-			averageInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+			averageInterval = intervals.reduce((a: number, b: number) => a + b, 0) / intervals.length;
 		}
 	}
 
