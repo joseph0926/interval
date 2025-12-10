@@ -5,7 +5,7 @@ const envSchema = z.object({
 	PORT: z.string().transform(Number).default(4001),
 	DATABASE_URL: z.url(),
 	SESSION_SECRET: z.string().min(32),
-	CORS_ORIGIN: z.string().default("http://localhost:5173,https://interval-client.vercel.app"),
+	CORS_ORIGIN: z.string().default("http://localhost:5173,https://interval-web.vercel.app"),
 });
 
 function validateEnv() {
