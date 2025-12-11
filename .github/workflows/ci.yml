@@ -26,6 +26,8 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm --filter @interval/server db:gen
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
       - name: Lint
         run: pnpm lint
