@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # apps/server 의존성 관리
+  - package-ecosystem: "npm"
+    directory: "/apps/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      # 프로덕션 의존성 그룹
+      production:
+        patterns:
+          - "fastify*"
+          - "@fastify/*"
+          - "@prisma/*"
+          - "prisma"
+          - "zod"
+      # 개발 의존성 그룹
+      development:
+        patterns:
+          - "typescript"
+          - "tsx"
+          - "@types/*"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # GitHub Actions 버전 관리
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
