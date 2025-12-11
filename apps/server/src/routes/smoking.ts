@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { requireAuth } from "../hooks/auth.js";
 import { getTodaySummary, recordSmoking, addDelay, softReset } from "../services/smoking.js";
 
 const recordSchema = z.object({
-	smokedAt: z.string(),
+	smokedAt: z.string().datetime({ message: "유효한 ISO 8601 날짜 형식이 필요합니다" }),
 	type: z.enum(["FIRST", "NORMAL", "EARLY"]),
 	reasonCode: z
 		.enum(["BREAK_TIME", "STRESS", "HABIT", "BORED", "SOCIAL", "AFTER_MEAL", "OTHER"])
@@ -18,14 +19,8 @@ const delaySchema = z.object({
 	minutes: z.number().int().min(1),
 });
 
-const softResetSchema = z.object({});
-
 export const smokingRoutes: FastifyPluginAsync = async (app) => {
-	app.addHook("preHandler", async (request, reply) => {
-		if (!request.session.userId) {
-			reply.code(401).send({ success: false, error: "Unauthorized" });
-		}
-	});
+	app.addHook("preHandler", requireAuth);
 
 	app.get("/today", async (request) => {
 		const userId = request.session.userId!;
@@ -57,14 +52,8 @@ export const smokingRoutes: FastifyPluginAsync = async (app) => {
 		return { success: true, ...result };
 	});
 
-	app.post("/soft-reset", async (request, reply) => {
+	app.post("/soft-reset", async (request) => {
 		const userId = request.session.userId!;
-		const parsed = softResetSchema.safeParse(request.body);
-
-		if (!parsed.success) {
-			return reply.code(400).send({ success: false, error: parsed.error.message });
-		}
-
 		const result = await softReset(userId);
 		return { success: true, ...result };
 	});

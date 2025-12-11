@@ -9,23 +9,24 @@ export async function getWeeklyReport(userId: string) {
 
 	const { start, end } = getWeekRange(user.dayStartTime);
 
-	const records = await prisma.smokingRecord.findMany({
-		where: {
-			userId,
-			smokedAt: { gte: start, lt: end },
-		},
-		orderBy: { smokedAt: "asc" },
-	});
-
-	const delayLogs = await prisma.delayLog.findMany({
-		where: {
-			userId,
-			date: {
-				gte: start.toISOString().split("T")[0],
-				lte: end.toISOString().split("T")[0],
+	const [records, delayLogs] = await Promise.all([
+		prisma.smokingRecord.findMany({
+			where: {
+				userId,
+				smokedAt: { gte: start, lt: end },
 			},
-		},
-	});
+			orderBy: { smokedAt: "asc" },
+		}),
+		prisma.delayLog.findMany({
+			where: {
+				userId,
+				date: {
+					gte: start.toISOString().split("T")[0],
+					lte: end.toISOString().split("T")[0],
+				},
+			},
+		}),
+	]);
 
 	const totalSmoked = records.length;
 	const totalDelayMinutes = delayLogs.reduce(

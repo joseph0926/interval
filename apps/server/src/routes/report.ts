@@ -1,12 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
+import { requireAuth } from "../hooks/auth.js";
 import { getWeeklyReport, getStreak, getInsight } from "../services/report.js";
 
 export const reportRoutes: FastifyPluginAsync = async (app) => {
-	app.addHook("preHandler", async (request, reply) => {
-		if (!request.session.userId) {
-			reply.code(401).send({ success: false, error: "Unauthorized" });
-		}
-	});
+	app.addHook("preHandler", requireAuth);
 
 	app.get("/weekly", async (request) => {
 		const userId = request.session.userId!;

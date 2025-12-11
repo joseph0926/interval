@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import session from "@fastify/session";
 import { env } from "./lib/env.js";
+import { SESSION_MAX_AGE_MS } from "./lib/constants.js";
 import { authRoutes } from "./routes/auth.js";
 import { smokingRoutes } from "./routes/smoking.js";
 import { settingsRoutes } from "./routes/settings.js";
@@ -28,7 +29,7 @@ export function buildApp() {
 			secure: process.env.NODE_ENV === "production",
 			httpOnly: true,
 			sameSite: "lax",
-			maxAge: 30 * 24 * 60 * 60 * 1000,
+			maxAge: SESSION_MAX_AGE_MS,
 		},
 	});
 

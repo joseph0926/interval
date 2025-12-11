@@ -18,9 +18,15 @@ async function main() {
 	}
 }
 
-process.on("SIGTERM", async () => {
-	await prisma.$disconnect();
+async function gracefulShutdown(signal: string) {
+	console.log(`${signal} received, shutting down gracefully...`);
 	await app.close();
-});
+	await prisma.$disconnect();
+	console.log("Server closed");
+	process.exit(0);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 main();

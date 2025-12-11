@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { MS_PER_MINUTE } from "../lib/constants.js";
 import { getTodayRange, getTodayDateString } from "../lib/date.js";
 import type { TodaySummary } from "../types/index.js";
 
@@ -97,7 +98,7 @@ export async function recordSmoking(
 
 	if (previousRecord) {
 		const diffMs = smokedAt.getTime() - previousRecord.smokedAt.getTime();
-		intervalFromPrevious = Math.round(diffMs / 60000);
+		intervalFromPrevious = Math.round(diffMs / MS_PER_MINUTE);
 		wasOnTarget = intervalFromPrevious >= user.currentTargetInterval;
 	}
 

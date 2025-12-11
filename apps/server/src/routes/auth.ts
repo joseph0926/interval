@@ -1,28 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../lib/prisma.js";
-import type { UserDto } from "../types/index.js";
-
-function toUserDto(user: {
-	id: string;
-	isGuest: boolean;
-	nickname: string | null;
-	email: string | null;
-	dailySmokingRange: string | null;
-	dayStartTime: string;
-	currentTargetInterval: number;
-	currentMotivation: string | null;
-}): UserDto {
-	return {
-		id: user.id,
-		isGuest: user.isGuest,
-		nickname: user.nickname,
-		email: user.email,
-		dailySmokingRange: user.dailySmokingRange as UserDto["dailySmokingRange"],
-		dayStartTime: user.dayStartTime,
-		currentTargetInterval: user.currentTargetInterval,
-		currentMotivation: user.currentMotivation,
-	};
-}
+import { toUserDto } from "../mappers/user.js";
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
 	app.get("/me", async (request) => {

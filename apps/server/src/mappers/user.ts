@@ -1,0 +1,44 @@
+import type { UserDto, Settings, DailySmokingRange } from "../types/index.js";
+
+interface UserEntity {
+	id: string;
+	isGuest: boolean;
+	nickname: string | null;
+	email: string | null;
+	dailySmokingRange: string | null;
+	dayStartTime: string;
+	currentTargetInterval: number;
+	currentMotivation: string | null;
+}
+
+interface UserSettingsEntity extends UserEntity {
+	notifyOnTargetTime: boolean;
+	notifyMorningDelay: boolean;
+	notifyDailyReminder: boolean;
+}
+
+export function toUserDto(user: UserEntity): UserDto {
+	return {
+		id: user.id,
+		isGuest: user.isGuest,
+		nickname: user.nickname,
+		email: user.email,
+		dailySmokingRange: user.dailySmokingRange as DailySmokingRange | null,
+		dayStartTime: user.dayStartTime,
+		currentTargetInterval: user.currentTargetInterval,
+		currentMotivation: user.currentMotivation,
+	};
+}
+
+export function toSettings(user: UserSettingsEntity): Settings {
+	return {
+		nickname: user.nickname,
+		dailySmokingRange: user.dailySmokingRange as DailySmokingRange | null,
+		dayStartTime: user.dayStartTime,
+		currentTargetInterval: user.currentTargetInterval,
+		currentMotivation: user.currentMotivation,
+		notifyOnTargetTime: user.notifyOnTargetTime,
+		notifyMorningDelay: user.notifyMorningDelay,
+		notifyDailyReminder: user.notifyDailyReminder,
+	};
+}
