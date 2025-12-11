@@ -42,6 +42,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		});
 
 		request.session.userId = newUser.id;
+		await request.session.save();
 
 		return { success: true, user: toUserDto(newUser) };
 	});
