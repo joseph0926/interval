@@ -9,12 +9,12 @@
 		"scheme": "interval",
 		"userInterfaceStyle": "automatic",
 		"newArchEnabled": true,
-		"backgroundColor": "#ffffff",
+		"backgroundColor": "#000000",
 		"primaryColor": "#4CAF50",
 		"splash": {
 			"image": "./assets/images/splash-icon.png",
 			"resizeMode": "contain",
-			"backgroundColor": "#ffffff"
+			"backgroundColor": "#000000"
 		},
 		"ios": {
 			"supportsTablet": false,
@@ -28,7 +28,7 @@
 		"android": {
 			"adaptiveIcon": {
 				"foregroundImage": "./assets/images/adaptive-icon.png",
-				"backgroundColor": "#ffffff"
+				"backgroundColor": "#000000"
 			},
 			"package": "com.intervalapp.smoking",
 			"versionCode": 1,
@@ -49,7 +49,7 @@
 			"shortName": "간격",
 			"description": "담배와의 간격을 벌려주는 심리 타이머",
 			"themeColor": "#4CAF50",
-			"backgroundColor": "#ffffff"
+			"backgroundColor": "#000000"
 		},
 		"plugins": [
 			"expo-router",
