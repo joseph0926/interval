@@ -10,15 +10,22 @@ export type ReasonCode =
 	| "OTHER";
 export type CoachingMode = "NONE" | "LIGHT" | "FULL";
 
+export type JobType = "OFFICE" | "REMOTE" | "SHIFT" | "FIELD" | "OTHER";
+
+export type ModuleType = "SMOKING" | "SNS" | "FOCUS" | "COFFEE";
+
 export interface User {
 	id: string;
 	isGuest: boolean;
 	nickname: string | null;
 	email?: string | null;
+	jobType?: JobType | null;
+	enabledModules?: ModuleType[];
 	dailySmokingRange?: DailySmokingRange | null;
 	dayStartTime?: string;
 	currentTargetInterval?: number;
 	currentMotivation?: string | null;
+	onboardingCompleted?: boolean;
 }
 
 export interface TodaySummary {
@@ -45,6 +52,8 @@ export interface SmokingRecord {
 
 export interface Settings {
 	nickname: string | null;
+	jobType: JobType | null;
+	enabledModules: ModuleType[];
 	dailySmokingRange: DailySmokingRange | null;
 	dayStartTime: string;
 	currentTargetInterval: number;
@@ -52,6 +61,12 @@ export interface Settings {
 	notifyOnTargetTime: boolean;
 	notifyMorningDelay: boolean;
 	notifyDailyReminder: boolean;
+}
+
+export interface DistanceBank {
+	today: number;
+	thisWeek: number;
+	total: number;
 }
 
 export interface WeeklyReportData {
@@ -64,19 +79,19 @@ export interface WeeklyReportData {
 	};
 	patterns: {
 		topReasons: Array<{
-			reason: string;
+			reason: ReasonCode;
 			label: string;
 			count: number;
 			percentage: number;
 		}>;
 		peakHours: Array<{
-			hour: string;
+			hour: number;
 			label: string;
 			count: number;
 			avgInterval: number | null;
 		}>;
-		bestHour: { hour: string; label: string; count: number; avgInterval: number | null } | null;
-		worstHour: { hour: string; label: string; count: number; avgInterval: number | null } | null;
+		bestHour: { hour: number; label: string; count: number; avgInterval: number | null } | null;
+		worstHour: { hour: number; label: string; count: number; avgInterval: number | null } | null;
 	};
 	dailyStats: Array<{
 		date: string;
@@ -84,11 +99,19 @@ export interface WeeklyReportData {
 		averageInterval: number | null;
 		totalDelayMinutes: number;
 	}>;
+	distanceBank: DistanceBank;
 }
 
 export interface StreakData {
 	currentStreak: number;
 	longestStreak: number;
+}
+
+export interface InsightData {
+	message: string;
+	suggestion: string;
+	peakHour: { hour: number; label: string; count: number } | null;
+	topReason: { reason: ReasonCode; label: string; count: number } | null;
 }
 
 export interface GamificationStatus {
@@ -104,6 +127,27 @@ export interface GamificationStatus {
 		earnedAt: string | null;
 	}>;
 	earnedBadgesCount: number;
+	distanceBank: DistanceBank;
+}
+
+export interface RecordSmokingInput {
+	smokedAt: string;
+	type: RecordType;
+	reasonCode?: ReasonCode;
+	reasonText?: string;
+	coachingMode?: CoachingMode;
+	emotionNote?: string;
+	delayedMinutes?: number;
+}
+
+export interface OnboardingInput {
+	jobType?: JobType;
+	enabledModules?: ModuleType[];
+	dailySmokingRange: DailySmokingRange;
+	targetInterval: number;
+	motivation?: string;
+	dayStartTime?: string;
+	nickname?: string;
 }
 
 export interface ApiResponse<T> {

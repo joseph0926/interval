@@ -18,9 +18,13 @@ export function OnboardingFlow() {
 	const [isPending, setIsPending] = useState(false);
 	const [error, setError] = useState<string>();
 	const [data, setData] = useState<OnboardingData>({
+		jobType: null,
+		enabledModules: ["SMOKING"],
 		dailySmokingRange: null,
 		targetInterval: 60,
 		motivation: "",
+		dayStartTime: "04:00",
+		nickname: "",
 	});
 
 	const stepIndex = STEPS.indexOf(currentStep);

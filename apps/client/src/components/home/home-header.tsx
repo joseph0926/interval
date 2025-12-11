@@ -6,7 +6,7 @@ interface HomeHeaderProps {
 	summary: TodaySummary;
 }
 
-function getStatusMessage(state: HomeState, summary: TodaySummary): string {
+function getStatusMessage(state: HomeState, summary: TodaySummary) {
 	switch (state.type) {
 		case "BEFORE_FIRST":
 			return "오늘 담배와 거리 두기, 같이 시작해요.";

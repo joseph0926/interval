@@ -18,15 +18,22 @@ export type ReasonCode =
 	| "OTHER";
 export type CoachingMode = "NONE" | "LIGHT" | "FULL";
 
+export type JobType = "OFFICE" | "REMOTE" | "SHIFT" | "FIELD" | "OTHER";
+
+export type ModuleType = "SMOKING" | "SNS" | "FOCUS" | "COFFEE";
+
 export interface UserDto {
 	id: string;
 	isGuest: boolean;
 	nickname: string | null;
 	email?: string | null;
+	jobType?: JobType | null;
+	enabledModules?: ModuleType[];
 	dailySmokingRange?: DailySmokingRange | null;
 	dayStartTime?: string;
 	currentTargetInterval?: number;
 	currentMotivation?: string | null;
+	onboardingCompleted?: boolean;
 }
 
 export interface TodaySummary {
@@ -42,8 +49,19 @@ export interface TodaySummary {
 	dayStartTime: string;
 }
 
+export interface SmokingRecord {
+	id: string;
+	smokedAt: string;
+	type: RecordType;
+	intervalFromPrevious: number | null;
+	wasOnTarget: boolean | null;
+	delayedMinutes: number;
+}
+
 export interface Settings {
 	nickname: string | null;
+	jobType: JobType | null;
+	enabledModules: ModuleType[];
 	dailySmokingRange: DailySmokingRange | null;
 	dayStartTime: string;
 	currentTargetInterval: number;
@@ -53,6 +71,83 @@ export interface Settings {
 	notifyDailyReminder: boolean;
 }
 
+export interface DistanceBank {
+	today: number;
+	thisWeek: number;
+	total: number;
+}
+
+export interface WeeklyReportData {
+	summary: {
+		avgInterval: number | null;
+		intervalChange: number | null;
+		totalDelayMinutes: number;
+		totalSmoked: number;
+		delaySuccessDays: number;
+	};
+	patterns: {
+		topReasons: Array<{
+			reason: ReasonCode;
+			label: string;
+			count: number;
+			percentage: number;
+		}>;
+		peakHours: Array<{
+			hour: number;
+			label: string;
+			count: number;
+			avgInterval: number | null;
+		}>;
+		bestHour: { hour: number; label: string; count: number; avgInterval: number | null } | null;
+		worstHour: { hour: number; label: string; count: number; avgInterval: number | null } | null;
+	};
+	dailyStats: Array<{
+		date: string;
+		totalSmoked: number;
+		averageInterval: number | null;
+		totalDelayMinutes: number;
+	}>;
+	distanceBank: DistanceBank;
+}
+
+export interface StreakData {
+	currentStreak: number;
+	longestStreak: number;
+}
+
+export interface InsightData {
+	message: string;
+	suggestion: string;
+	peakHour: { hour: number; label: string; count: number } | null;
+	topReason: { reason: ReasonCode; label: string; count: number } | null;
+}
+
+export interface GamificationStatus {
+	level: number;
+	totalDelayMinutes: number;
+	nextLevel: number | null;
+	minutesToNextLevel: number | null;
+	badges: Array<{
+		type: string;
+		name: string;
+		description: string;
+		earned: boolean;
+		earnedAt: string | null;
+	}>;
+	earnedBadgesCount: number;
+	distanceBank: DistanceBank;
+}
+
+export interface RecordSmokingInput {
+	smokedAt: string;
+	type: RecordType;
+	reasonCode?: ReasonCode;
+	reasonText?: string;
+	coachingMode?: CoachingMode;
+	emotionNote?: string;
+	delayedMinutes?: number;
+}
+
 export interface BadgeDefinition {
 	type: string;
 	name: string;
@@ -60,62 +155,12 @@ export interface BadgeDefinition {
 	condition: (totalDelayMinutes: number) => boolean;
 }
 
-export const BADGE_DEFINITIONS: BadgeDefinition[] = [
-	{
-		type: "FIRST_DELAY",
-		name: "첫 미루기",
-		description: "처음으로 흡연을 미뤘습니다",
-		condition: (m) => m >= 1,
-	},
-	{
-		type: "DELAY_30",
-		name: "30분 마스터",
-		description: "총 30분 미루기 달성",
-		condition: (m) => m >= 30,
-	},
-	{
-		type: "DELAY_60",
-		name: "1시간 챔피언",
-		description: "총 1시간 미루기 달성",
-		condition: (m) => m >= 60,
-	},
-	{
-		type: "DELAY_180",
-		name: "3시간 영웅",
-		description: "총 3시간 미루기 달성",
-		condition: (m) => m >= 180,
-	},
-	{
-		type: "DELAY_360",
-		name: "6시간 전설",
-		description: "총 6시간 미루기 달성",
-		condition: (m) => m >= 360,
-	},
-	{
-		type: "DELAY_720",
-		name: "12시간 신화",
-		description: "총 12시간 미루기 달성",
-		condition: (m) => m >= 720,
-	},
-];
-
-export const LEVEL_THRESHOLDS = [0, 30, 60, 120, 240, 480, 960, 1920, 3840, 7680];
-
-export function calculateLevel(totalDelayMinutes: number): number {
-	for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-		if (totalDelayMinutes >= LEVEL_THRESHOLDS[i]) {
-			return i + 1;
-		}
-	}
-	return 1;
+export interface OnboardingInput {
+	jobType?: JobType;
+	enabledModules?: ModuleType[];
+	dailySmokingRange: DailySmokingRange;
+	targetInterval: number;
+	motivation?: string;
+	dayStartTime?: string;
+	nickname?: string;
 }
-
-export const REASON_LABELS: Record<string, string> = {
-	BREAK_TIME: "휴식 시간",
-	STRESS: "스트레스",
-	HABIT: "습관적으로",
-	BORED: "지루해서",
-	SOCIAL: "사회적 상황",
-	AFTER_MEAL: "식사 후",
-	OTHER: "기타",
-};

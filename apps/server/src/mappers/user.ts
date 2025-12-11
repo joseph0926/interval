@@ -1,10 +1,12 @@
-import type { UserDto, Settings, DailySmokingRange } from "../types/index.js";
+import type { UserDto, Settings, DailySmokingRange, JobType, ModuleType } from "../types/index.js";
 
 interface UserEntity {
 	id: string;
 	isGuest: boolean;
 	nickname: string | null;
 	email: string | null;
+	jobType: string | null;
+	enabledModules: string[];
 	dailySmokingRange: string | null;
 	dayStartTime: string;
 	currentTargetInterval: number;
@@ -33,6 +35,8 @@ export function toUserDto(user: UserEntity): UserDto {
 export function toSettings(user: UserSettingsEntity): Settings {
 	return {
 		nickname: user.nickname,
+		jobType: user.jobType as JobType | null,
+		enabledModules: user.enabledModules as ModuleType[],
 		dailySmokingRange: user.dailySmokingRange as DailySmokingRange | null,
 		dayStartTime: user.dayStartTime,
 		currentTargetInterval: user.currentTargetInterval,

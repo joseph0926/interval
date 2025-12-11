@@ -1,5 +1,5 @@
 import type { ReportData, DailyIntervalData } from "@/types/report.type";
-import type { WeeklyReportData, StreakData, ReasonCode } from "@/lib/api-types";
+import type { WeeklyReportData, StreakData } from "@/lib/api-types";
 
 const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -36,13 +36,13 @@ export function transformReportData(
 		dailyIntervals,
 		reasonBreakdown:
 			weeklyData?.patterns?.topReasons?.map((r) => ({
-				reasonCode: r.reason as ReasonCode,
+				reasonCode: r.reason,
 				count: r.count,
 				percentage: Math.round(r.percentage),
 			})) ?? [],
 		peakHours:
 			weeklyData?.patterns?.peakHours?.map((h) => ({
-				hour: parseInt(h.hour.split("-")[0], 10),
+				hour: h.hour,
 				count: h.count,
 			})) ?? [],
 		streakDays: streakData?.currentStreak ?? 0,

@@ -1,4 +1,5 @@
-import type { ReasonCode } from "./smoking.type";
+export type { WeeklyReportData, StreakData, InsightData } from "@/lib/api-types";
+import type { ReasonCode } from "@/lib/api-types";
 
 export interface WeeklySummary {
 	averageInterval: number | null;

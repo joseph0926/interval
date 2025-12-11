@@ -12,6 +12,8 @@ model User {
   isGuest               Boolean  @default(true)
   nickname              String?
   email                 String?  @unique
+  jobType               String?
+  enabledModules        String[] @default(["SMOKING"])
   dailySmokingRange     String?
   dayStartTime          String   @default("04:00")
   currentTargetInterval Int      @default(60)

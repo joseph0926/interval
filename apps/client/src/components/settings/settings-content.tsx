@@ -6,10 +6,10 @@ import { NotificationSettingCard } from "./notification-setting-card";
 import { DataSettingCard } from "./data-setting-card";
 import { AppInfoCard } from "./app-info-card";
 import { fadeIn, slideUp, createStaggeredDelay } from "@/lib/motion";
-import type { UserSettings } from "@/types/settings.type";
+import type { Settings } from "@/types/settings.type";
 
 interface SettingsContentProps {
-	settings: UserSettings;
+	settings: Settings & { isGuest: boolean };
 }
 
 export function SettingsContent({ settings }: SettingsContentProps) {
@@ -30,7 +30,7 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					animate="visible"
 					transition={createStaggeredDelay(0, 0.05)}
 				>
-					<IntervalSettingCard currentInterval={settings.targetInterval} />
+					<IntervalSettingCard currentInterval={settings.currentTargetInterval} />
 				</motion.div>
 				<motion.div
 					variants={slideUp}
@@ -38,7 +38,7 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					animate="visible"
 					transition={createStaggeredDelay(1, 0.05)}
 				>
-					<MotivationSettingCard currentMotivation={settings.motivation} />
+					<MotivationSettingCard currentMotivation={settings.currentMotivation} />
 				</motion.div>
 				<motion.div
 					variants={slideUp}
@@ -47,8 +47,8 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					transition={createStaggeredDelay(2, 0.05)}
 				>
 					<NotificationSettingCard
-						notificationEnabled={settings.notificationEnabled}
-						morningReminderEnabled={settings.morningReminderEnabled}
+						notificationEnabled={settings.notifyOnTargetTime}
+						morningReminderEnabled={settings.notifyMorningDelay}
 					/>
 				</motion.div>
 				<motion.div

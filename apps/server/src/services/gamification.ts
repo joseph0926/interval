@@ -1,7 +1,42 @@
 import { prisma } from "../lib/prisma.js";
-import { BADGE_DEFINITIONS, LEVEL_THRESHOLDS, calculateLevel } from "../types/index.js";
+import { BADGE_DEFINITIONS, LEVEL_THRESHOLDS, calculateLevel } from "../lib/constants.js";
+import { getTodayDateString, getWeekRange } from "../lib/date.js";
+import type { GamificationStatus, DistanceBank } from "../types/index.js";
 
-export async function getGamificationStatus(userId: string) {
+async function getDistanceBank(userId: string, dayStartTime: string): Promise<DistanceBank> {
+	const todayStr = getTodayDateString(dayStartTime);
+	const { start: weekStart, end: weekEnd } = getWeekRange(dayStartTime);
+
+	const [todayLog, weekLogs, allLogs] = await Promise.all([
+		prisma.delayLog.findUnique({
+			where: { userId_date: { userId, date: todayStr } },
+		}),
+		prisma.delayLog.findMany({
+			where: {
+				userId,
+				date: {
+					gte: weekStart.toISOString().split("T")[0],
+					lte: weekEnd.toISOString().split("T")[0],
+				},
+			},
+		}),
+		prisma.delayLog.findMany({
+			where: { userId },
+		}),
+	]);
+
+	return {
+		today: todayLog?.minutes ?? 0,
+		thisWeek: weekLogs.reduce((sum, log) => sum + log.minutes, 0),
+		total: allLogs.reduce((sum, log) => sum + log.minutes, 0),
+	};
+}
+
+export async function getGamificationStatus(userId: string): Promise<GamificationStatus> {
+	const user = await prisma.user.findUniqueOrThrow({
+		where: { id: userId },
+	});
+
 	const delayLogs = await prisma.delayLog.findMany({
 		where: { userId },
 	});
@@ -54,6 +89,8 @@ export async function getGamificationStatus(userId: string) {
 	const minutesToNextLevel =
 		nextLevelThreshold !== null ? nextLevelThreshold - totalDelayMinutes : null;
 
+	const distanceBank = await getDistanceBank(userId, user.dayStartTime);
+
 	return {
 		level,
 		totalDelayMinutes,
@@ -61,5 +98,6 @@ export async function getGamificationStatus(userId: string) {
 		minutesToNextLevel,
 		badges,
 		earnedBadgesCount: allBadges.length,
+		distanceBank,
 	};
 }

@@ -1,8 +1,15 @@
 import { prisma } from "../lib/prisma.js";
 import { getWeekRange, getTodayDateString, formatHourLabel } from "../lib/date.js";
-import { REASON_LABELS } from "../types/index.js";
+import { REASON_LABELS, DELAY_SUCCESS_THRESHOLD_MINUTES } from "../lib/constants.js";
+import type {
+	WeeklyReportData,
+	StreakData,
+	InsightData,
+	ReasonCode,
+	DistanceBank,
+} from "../types/index.js";
 
-export async function getWeeklyReport(userId: string) {
+export async function getWeeklyReport(userId: string): Promise<WeeklyReportData> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
@@ -43,7 +50,9 @@ export async function getWeeklyReport(userId: string) {
 			? Math.round(intervals.reduce((a: number, b: number) => a + b, 0) / intervals.length)
 			: null;
 
-	const delaySuccessDays = delayLogs.filter((log: { minutes: number }) => log.minutes >= 10).length;
+	const delaySuccessDays = delayLogs.filter(
+		(log: { minutes: number }) => log.minutes >= DELAY_SUCCESS_THRESHOLD_MINUTES,
+	).length;
 
 	const reasonCounts: Record<string, number> = {};
 	const hourCounts: Record<
@@ -71,10 +80,10 @@ export async function getWeeklyReport(userId: string) {
 		.sort((a, b) => b[1] - a[1])
 		.slice(0, 5)
 		.map(([reason, count]) => ({
-			reason,
-			label: REASON_LABELS[reason] || reason,
+			reason: reason as ReasonCode,
+			label: REASON_LABELS[reason as ReasonCode] ?? reason,
 			count,
-			percentage: Math.round((count / totalSmoked) * 100),
+			percentage: totalSmoked > 0 ? Math.round((count / totalSmoked) * 100) : 0,
 		}));
 
 	const peakHours = Object.entries(hourCounts)
@@ -83,7 +92,7 @@ export async function getWeeklyReport(userId: string) {
 		.map(([hourStr, data]) => {
 			const hour = parseInt(hourStr, 10);
 			return {
-				hour: hourStr,
+				hour,
 				label: formatHourLabel(hour),
 				count: data.count,
 				avgInterval:
@@ -151,6 +160,8 @@ export async function getWeeklyReport(userId: string) {
 			totalDelayMinutes: stats.totalDelay,
 		}));
 
+	const distanceBank = await getDistanceBank(userId, user.dayStartTime);
+
 	return {
 		summary: {
 			avgInterval,
@@ -166,10 +177,40 @@ export async function getWeeklyReport(userId: string) {
 			worstHour,
 		},
 		dailyStats,
+		distanceBank,
 	};
 }
 
-export async function getStreak(userId: string) {
+async function getDistanceBank(userId: string, dayStartTime: string): Promise<DistanceBank> {
+	const todayStr = getTodayDateString(dayStartTime);
+	const { start: weekStart, end: weekEnd } = getWeekRange(dayStartTime);
+
+	const [todayLog, weekLogs, allLogs] = await Promise.all([
+		prisma.delayLog.findUnique({
+			where: { userId_date: { userId, date: todayStr } },
+		}),
+		prisma.delayLog.findMany({
+			where: {
+				userId,
+				date: {
+					gte: weekStart.toISOString().split("T")[0],
+					lte: weekEnd.toISOString().split("T")[0],
+				},
+			},
+		}),
+		prisma.delayLog.findMany({
+			where: { userId },
+		}),
+	]);
+
+	return {
+		today: todayLog?.minutes ?? 0,
+		thisWeek: weekLogs.reduce((sum, log) => sum + log.minutes, 0),
+		total: allLogs.reduce((sum, log) => sum + log.minutes, 0),
+	};
+}
+
+export async function getStreak(userId: string): Promise<StreakData> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
@@ -181,7 +222,7 @@ export async function getStreak(userId: string) {
 
 	const successDates = new Set(
 		delayLogs
-			.filter((log: { minutes: number }) => log.minutes >= 10)
+			.filter((log: { minutes: number }) => log.minutes >= DELAY_SUCCESS_THRESHOLD_MINUTES)
 			.map((log: { date: string }) => log.date),
 	);
 
@@ -216,7 +257,7 @@ export async function getStreak(userId: string) {
 	return { currentStreak, longestStreak };
 }
 
-export async function getInsight(userId: string) {
+export async function getInsight(userId: string): Promise<InsightData> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
@@ -255,15 +296,15 @@ export async function getInsight(userId: string) {
 
 	const topReason = topReasonEntry
 		? {
-				reason: topReasonEntry[0],
-				label: REASON_LABELS[topReasonEntry[0]] || topReasonEntry[0],
+				reason: topReasonEntry[0] as ReasonCode,
+				label: REASON_LABELS[topReasonEntry[0] as ReasonCode] ?? topReasonEntry[0],
 				count: topReasonEntry[1],
 			}
 		: null;
 
 	const peakHour = peakHourEntry
 		? {
-				hour: peakHourEntry[0],
+				hour: parseInt(peakHourEntry[0], 10),
 				label: formatHourLabel(parseInt(peakHourEntry[0], 10)),
 				count: peakHourEntry[1],
 			}

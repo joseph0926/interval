@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { MS_PER_MINUTE } from "../lib/constants.js";
 import { getTodayRange, getTodayDateString } from "../lib/date.js";
-import type { TodaySummary } from "../types/index.js";
+import type { TodaySummary, SmokingRecord, RecordSmokingInput } from "../types/index.js";
 
 export async function getTodaySummary(userId: string): Promise<TodaySummary> {
 	const user = await prisma.user.findUniqueOrThrow({
@@ -68,16 +68,8 @@ export async function getTodaySummary(userId: string): Promise<TodaySummary> {
 
 export async function recordSmoking(
 	userId: string,
-	data: {
-		smokedAt: string;
-		type: string;
-		reasonCode?: string;
-		reasonText?: string;
-		coachingMode?: string;
-		emotionNote?: string;
-		delayedMinutes?: number;
-	},
-) {
+	data: RecordSmokingInput,
+): Promise<{ record: SmokingRecord }> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
@@ -130,7 +122,7 @@ export async function recordSmoking(
 		record: {
 			id: record.id,
 			smokedAt: record.smokedAt.toISOString(),
-			type: record.type,
+			type: record.type as SmokingRecord["type"],
 			intervalFromPrevious: record.intervalFromPrevious,
 			wasOnTarget: record.wasOnTarget,
 			delayedMinutes: record.delayedMinutes,
@@ -138,7 +130,10 @@ export async function recordSmoking(
 	};
 }
 
-export async function addDelay(userId: string, minutes: number) {
+export async function addDelay(
+	userId: string,
+	minutes: number,
+): Promise<{ totalDelayMinutes: number; addedMinutes: number }> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
@@ -157,7 +152,7 @@ export async function addDelay(userId: string, minutes: number) {
 	};
 }
 
-export async function softReset(userId: string) {
+export async function softReset(userId: string): Promise<{ message: string; resetAt: string }> {
 	const user = await prisma.user.findUniqueOrThrow({
 		where: { id: userId },
 	});
