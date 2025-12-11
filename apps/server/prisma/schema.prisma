@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                    String   @id @default(uuid())
+  isGuest               Boolean  @default(true)
+  nickname              String?
+  email                 String?  @unique
+  dailySmokingRange     String?
+  dayStartTime          String   @default("04:00")
+  currentTargetInterval Int      @default(60)
+  currentMotivation     String?
+  onboardingCompleted   Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  smokingRecords SmokingRecord[]
+  delayLogs      DelayLog[]
+  badges         UserBadge[]
+
+  notifyOnTargetTime  Boolean @default(true)
+  notifyMorningDelay  Boolean @default(true)
+  notifyDailyReminder Boolean @default(true)
+
+  @@index([email])
+}
+
+model SmokingRecord {
+  id                   String   @id @default(uuid())
+  userId               String
+  smokedAt             DateTime
+  type                 String
+  reasonCode           String?
+  reasonText           String?
+  coachingMode         String   @default("NONE")
+  emotionNote          String?
+  intervalFromPrevious Int?
+  wasOnTarget          Boolean?
+  delayedMinutes       Int      @default(0)
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, smokedAt])
+}
+
+model DelayLog {
+  id        String   @id @default(uuid())
+  userId    String
+  date      String
+  minutes   Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  type     String
+  earnedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+}
