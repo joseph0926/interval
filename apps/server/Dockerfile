@@ -58,6 +58,7 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src/generated ./dist/generated
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./
 
