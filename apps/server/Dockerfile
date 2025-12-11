@@ -12,6 +12,7 @@ ENV NODE_ENV="production"
 
 FROM base AS build
 
+ENV NODE_ENV="development"
 
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
@@ -26,7 +27,7 @@ RUN apt-get update -qq && \
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --include=dev
+RUN npm install --include=dev
 
 
 RUN npx prisma generate
