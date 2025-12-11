@@ -27,8 +27,8 @@ async function getDistanceBank(userId: string, dayStartTime: string): Promise<Di
 
 	return {
 		today: todayLog?.minutes ?? 0,
-		thisWeek: weekLogs.reduce((sum, log) => sum + log.minutes, 0),
-		total: allLogs.reduce((sum, log) => sum + log.minutes, 0),
+		thisWeek: weekLogs.reduce((sum: number, log: { minutes: number }) => sum + log.minutes, 0),
+		total: allLogs.reduce((sum: number, log: { minutes: number }) => sum + log.minutes, 0),
 	};
 }
 
