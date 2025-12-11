@@ -1,72 +1,48 @@
-import { use, Suspense } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ReportContent } from "@/components/report/report-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import type { ReportData, DailyIntervalData } from "@/types/report.type";
-import type { ReasonCode } from "@/types/smoking.type";
+import { transformReportData } from "@/lib/report-utils";
 
-const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
+function useReportData() {
+	const [weeklyData, setWeeklyData] = useState<Awaited<
+		ReturnType<typeof api.report.weekly>
+	> | null>(null);
+	const [streakData, setStreakData] = useState<Awaited<
+		ReturnType<typeof api.report.streak>
+	> | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 
-async function fetchReportData(): Promise<ReportData> {
-	const [weeklyJson, streakJson] = await Promise.all([api.report.weekly(), api.report.streak()]);
+	useEffect(() => {
+		let cancelled = false;
 
-	const weeklyData = weeklyJson.data;
-	const streakData = streakJson.data;
+		async function fetchData() {
+			setIsLoading(true);
+			try {
+				const [weekly, streak] = await Promise.all([api.report.weekly(), api.report.streak()]);
+				if (!cancelled) {
+					setWeeklyData(weekly);
+					setStreakData(streak);
+				}
+			} finally {
+				if (!cancelled) {
+					setIsLoading(false);
+				}
+			}
+		}
 
-	const dailyIntervals: DailyIntervalData[] =
-		weeklyData?.dailyStats?.map(
-			(
-				stat: { date: string; averageInterval: number | null; totalSmoked: number },
-				index: number,
-			) => ({
-				date: stat.date,
-				dayOfWeek: DAYS_OF_WEEK[index] ?? "?",
-				averageInterval: stat.averageInterval ? Math.round(stat.averageInterval) : null,
-				totalSmoked: stat.totalSmoked,
-			}),
-		) ??
-		DAYS_OF_WEEK.map((day) => ({
-			date: "",
-			dayOfWeek: day,
-			averageInterval: null,
-			totalSmoked: 0,
-		}));
+		fetchData();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-	return {
-		weeklySummary: {
-			averageInterval: weeklyData?.summary?.avgInterval
-				? Math.round(weeklyData.summary.avgInterval)
-				: null,
-			totalSmoked: weeklyData?.summary?.totalSmoked ?? 0,
-			totalDelayMinutes: weeklyData?.summary?.totalDelayMinutes ?? 0,
-			previousWeekAverageInterval: weeklyData?.summary?.intervalChange
-				? Math.round((weeklyData.summary.avgInterval ?? 0) - weeklyData.summary.intervalChange)
-				: null,
-			hasDelaySuccessDays: weeklyData?.summary?.delaySuccessDays ?? 0,
-		},
-		dailyIntervals,
-		reasonBreakdown:
-			weeklyData?.patterns?.topReasons?.map(
-				(r: { reason: string; count: number; percentage: number }) => ({
-					reasonCode: r.reason as ReasonCode,
-					count: r.count,
-					percentage: Math.round(r.percentage),
-				}),
-			) ?? [],
-		peakHours:
-			weeklyData?.patterns?.peakHours?.map((h: { hour: string; count: number }) => ({
-				hour: parseInt(h.hour.split("-")[0], 10),
-				count: h.count,
-			})) ?? [],
-		streakDays: streakData?.currentStreak ?? 0,
-	};
-}
+	const reportData = useMemo(
+		() => transformReportData(weeklyData?.data, streakData?.data),
+		[weeklyData, streakData],
+	);
 
-const reportDataPromise = fetchReportData();
-
-function ReportDataLoader() {
-	const data = use(reportDataPromise);
-	return <ReportContent data={data} />;
+	return { data: reportData, isLoading };
 }
 
 function ReportSkeleton() {
@@ -87,9 +63,11 @@ function ReportSkeleton() {
 }
 
 export function ReportPage() {
-	return (
-		<Suspense fallback={<ReportSkeleton />}>
-			<ReportDataLoader />
-		</Suspense>
-	);
+	const { data, isLoading } = useReportData();
+
+	if (isLoading) {
+		return <ReportSkeleton />;
+	}
+
+	return <ReportContent data={data} />;
 }

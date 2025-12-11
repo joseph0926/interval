@@ -1,13 +1,6 @@
-export type RecordType = "FIRST" | "NORMAL" | "EARLY";
-export type ReasonCode =
-	| "BREAK_TIME"
-	| "STRESS"
-	| "HABIT"
-	| "BORED"
-	| "SOCIAL"
-	| "AFTER_MEAL"
-	| "OTHER";
-export type CoachingMode = "NONE" | "LIGHT" | "FULL";
+export type { RecordType, ReasonCode, CoachingMode } from "@/lib/api-types";
+
+import type { ReasonCode, RecordType, CoachingMode } from "@/lib/api-types";
 
 export interface ReasonOption {
 	code: ReasonCode;

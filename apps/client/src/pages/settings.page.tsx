@@ -1,29 +1,48 @@
-import { use, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { SettingsContent } from "@/components/settings/settings-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { DEFAULT_TARGET_INTERVAL } from "@/constants/smoking";
 import type { UserSettings } from "@/types/settings.type";
 
-async function fetchSettings(): Promise<UserSettings> {
-	const [settingsJson, authJson] = await Promise.all([api.settings.get(), api.auth.me()]);
+function useSettingsData() {
+	const [settings, setSettings] = useState<UserSettings | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 
-	const settings = settingsJson.settings;
-	const user = authJson.user;
+	useEffect(() => {
+		let cancelled = false;
 
-	return {
-		targetInterval: settings?.currentTargetInterval ?? 60,
-		motivation: settings?.currentMotivation ?? null,
-		notificationEnabled: settings?.notifyOnTargetTime ?? false,
-		morningReminderEnabled: settings?.notifyMorningDelay ?? false,
-		isGuest: user?.isGuest ?? true,
-	};
-}
+		async function fetchData() {
+			setIsLoading(true);
+			try {
+				const [settingsJson, authJson] = await Promise.all([api.settings.get(), api.auth.me()]);
 
-const settingsPromise = fetchSettings();
+				if (!cancelled) {
+					const settingsData = settingsJson.settings;
+					const user = authJson.user;
 
-function SettingsDataLoader() {
-	const settings = use(settingsPromise);
-	return <SettingsContent settings={settings} />;
+					setSettings({
+						targetInterval: settingsData?.currentTargetInterval ?? DEFAULT_TARGET_INTERVAL,
+						motivation: settingsData?.currentMotivation ?? null,
+						notificationEnabled: settingsData?.notifyOnTargetTime ?? false,
+						morningReminderEnabled: settingsData?.notifyMorningDelay ?? false,
+						isGuest: user?.isGuest ?? true,
+					});
+				}
+			} finally {
+				if (!cancelled) {
+					setIsLoading(false);
+				}
+			}
+		}
+
+		fetchData();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	return { settings, isLoading };
 }
 
 function SettingsSkeleton() {
@@ -45,9 +64,11 @@ function SettingsSkeleton() {
 }
 
 export function SettingsPage() {
-	return (
-		<Suspense fallback={<SettingsSkeleton />}>
-			<SettingsDataLoader />
-		</Suspense>
-	);
+	const { settings, isLoading } = useSettingsData();
+
+	if (isLoading || !settings) {
+		return <SettingsSkeleton />;
+	}
+
+	return <SettingsContent settings={settings} />;
 }

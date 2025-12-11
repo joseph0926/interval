@@ -1,4 +1,5 @@
-export type DailySmokingRange = "UNDER_5" | "FROM_5_10" | "FROM_10_20" | "OVER_20" | "UNKNOWN";
+export type { DailySmokingRange } from "@/lib/api-types";
+import type { DailySmokingRange } from "@/lib/api-types";
 
 export interface OnboardingData {
 	dailySmokingRange: DailySmokingRange | null;

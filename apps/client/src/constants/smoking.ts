@@ -1,0 +1,4 @@
+export const COACHING_TIMER_DURATION = 30;
+export const DEFAULT_DELAY_MINUTES = 5;
+export const DEFAULT_TARGET_INTERVAL = 60;
+export const MOTIVATION_MAX_LENGTH = 200;

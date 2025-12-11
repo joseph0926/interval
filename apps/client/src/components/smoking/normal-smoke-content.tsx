@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { ReasonSelector } from "./reason-selector";
 import { recordSmoking } from "@/lib/actions";
+import { getElapsedMinutes } from "@/lib/interval";
 import { toast } from "sonner";
 import type { TodaySummary } from "@/types/home.type";
 import type { ReasonCode } from "@/types/smoking.type";
@@ -17,9 +18,7 @@ export function NormalSmokeContent({ summary, onComplete }: NormalSmokeContentPr
 	const [customReason, setCustomReason] = useState("");
 	const [isPending, startTransition] = useTransition();
 
-	const currentInterval = summary.lastSmokedAt
-		? Math.round((Date.now() - new Date(summary.lastSmokedAt).getTime()) / 1000 / 60)
-		: 0;
+	const currentInterval = getElapsedMinutes(summary.lastSmokedAt);
 
 	const handleSubmit = () => {
 		if (!reasonCode) {

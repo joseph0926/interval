@@ -4,6 +4,7 @@ import { WeeklySummaryCard } from "./weekly-summary-card";
 import { IntervalChart } from "./interval-chart";
 import { ReasonCard } from "./reason-card";
 import { InsightCard } from "./insight-card";
+import { fadeIn, slideUp, createStaggeredDelay } from "@/lib/motion";
 import type { ReportData } from "@/types/report.type";
 
 interface ReportContentProps {
@@ -13,44 +14,44 @@ interface ReportContentProps {
 export function ReportContent({ data }: ReportContentProps) {
 	return (
 		<motion.div
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.15 }}
+			variants={fadeIn}
+			initial="hidden"
+			animate="visible"
 			className="flex flex-1 flex-col"
 		>
-			<motion.div
-				initial={{ opacity: 0, y: -10 }}
-				animate={{ opacity: 1, y: 0 }}
-				className="px-6 pt-12"
-			>
+			<motion.div variants={slideUp} initial="hidden" animate="visible" className="px-6 pt-12">
 				<ReportHeader streakDays={data.streakDays} />
 			</motion.div>
 			<div className="flex flex-col gap-4 px-6 py-6">
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.1 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(0)}
 				>
 					<WeeklySummaryCard summary={data.weeklySummary} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.2 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(1)}
 				>
 					<IntervalChart dailyIntervals={data.dailyIntervals} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.3 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(2)}
 				>
 					<ReasonCard breakdown={data.reasonBreakdown} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.4 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(3)}
 				>
 					<InsightCard data={data} />
 				</motion.div>

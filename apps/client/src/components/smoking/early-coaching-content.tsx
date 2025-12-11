@@ -6,6 +6,8 @@ import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { ReasonSelector } from "./reason-selector";
 import { CoachingTimer } from "./coaching-timer";
 import { recordSmoking, addDelay } from "@/lib/actions";
+import { slideInRight, scaleIn } from "@/lib/motion";
+import { COACHING_TIMER_DURATION, DEFAULT_DELAY_MINUTES } from "@/constants/smoking";
 import { toast } from "sonner";
 import type { TodaySummary } from "@/types/home.type";
 import type { ReasonCode } from "@/types/smoking.type";
@@ -47,14 +49,14 @@ export function EarlyCoachingContent({
 
 	const handleDelay = () => {
 		startTransition(async () => {
-			const result = await addDelay(5);
+			const result = await addDelay(DEFAULT_DELAY_MINUTES);
 
 			if (!result.success) {
 				toast.error(result.error);
 				return;
 			}
 
-			toast.success("대단해요! 담배와 5분의 거리를 더 벌렸어요.", {
+			toast.success(`대단해요! 담배와 ${DEFAULT_DELAY_MINUTES}분의 거리를 더 벌렸어요.`, {
 				description: "조금만 더 버텨봐요 💪",
 			});
 
@@ -91,9 +93,10 @@ export function EarlyCoachingContent({
 				{step === "REASON" && (
 					<motion.div
 						key="reason"
-						initial={{ opacity: 0, x: 20 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
+						variants={slideInRight}
+						initial="hidden"
+						animate="visible"
+						exit="exit"
 						className="flex flex-col gap-6"
 					>
 						<div>
@@ -128,9 +131,10 @@ export function EarlyCoachingContent({
 				{step === "REFLECTION" && (
 					<motion.div
 						key="reflection"
-						initial={{ opacity: 0, x: 20 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
+						variants={slideInRight}
+						initial="hidden"
+						animate="visible"
+						exit="exit"
 						className="flex flex-col gap-6"
 					>
 						<div>
@@ -158,20 +162,22 @@ export function EarlyCoachingContent({
 				{step === "TIMER" && (
 					<motion.div
 						key="timer"
-						initial={{ opacity: 0, scale: 0.95 }}
-						animate={{ opacity: 1, scale: 1 }}
-						exit={{ opacity: 0, scale: 0.95 }}
+						variants={scaleIn}
+						initial="hidden"
+						animate="visible"
+						exit="exit"
 						className="flex flex-col gap-6"
 					>
-						<CoachingTimer duration={30} onComplete={handleTimerComplete} />
+						<CoachingTimer duration={COACHING_TIMER_DURATION} onComplete={handleTimerComplete} />
 					</motion.div>
 				)}
 				{step === "DECISION" && (
 					<motion.div
 						key="decision"
-						initial={{ opacity: 0, x: 20 }}
-						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
+						variants={slideInRight}
+						initial="hidden"
+						animate="visible"
+						exit="exit"
 						className="flex flex-col gap-6"
 					>
 						<div className="text-center">
@@ -195,7 +201,7 @@ export function EarlyCoachingContent({
 								onClick={handleDelay}
 								disabled={isPending}
 							>
-								{isPending ? "처리 중..." : "5분만 더 미뤄볼게요"}
+								{isPending ? "처리 중..." : `${DEFAULT_DELAY_MINUTES}분만 더 미뤄볼게요`}
 							</Button>
 							<Button
 								variant="ghost"

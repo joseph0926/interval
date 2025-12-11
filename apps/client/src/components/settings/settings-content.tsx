@@ -5,6 +5,7 @@ import { MotivationSettingCard } from "./motivation-setting-card";
 import { NotificationSettingCard } from "./notification-setting-card";
 import { DataSettingCard } from "./data-setting-card";
 import { AppInfoCard } from "./app-info-card";
+import { fadeIn, slideUp, createStaggeredDelay } from "@/lib/motion";
 import type { UserSettings } from "@/types/settings.type";
 
 interface SettingsContentProps {
@@ -14,37 +15,36 @@ interface SettingsContentProps {
 export function SettingsContent({ settings }: SettingsContentProps) {
 	return (
 		<motion.div
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.15 }}
+			variants={fadeIn}
+			initial="hidden"
+			animate="visible"
 			className="flex flex-1 flex-col"
 		>
-			<motion.div
-				initial={{ opacity: 0, y: -10 }}
-				animate={{ opacity: 1, y: 0 }}
-				className="px-6 pt-12"
-			>
+			<motion.div variants={slideUp} initial="hidden" animate="visible" className="px-6 pt-12">
 				<SettingsHeader />
 			</motion.div>
 			<div className="flex flex-col gap-4 px-6 py-6">
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.1 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(0, 0.05)}
 				>
 					<IntervalSettingCard currentInterval={settings.targetInterval} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.15 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(1, 0.05)}
 				>
 					<MotivationSettingCard currentMotivation={settings.motivation} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.2 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(2, 0.05)}
 				>
 					<NotificationSettingCard
 						notificationEnabled={settings.notificationEnabled}
@@ -52,16 +52,18 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					/>
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.25 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(3, 0.05)}
 				>
 					<DataSettingCard isGuest={settings.isGuest} />
 				</motion.div>
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.3 }}
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(4, 0.05)}
 				>
 					<AppInfoCard />
 				</motion.div>

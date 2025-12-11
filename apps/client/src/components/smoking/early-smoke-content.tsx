@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DrawerClose, DrawerFooter } from "@/components/ui/drawer";
 import { EarlyLightContent } from "./early-light-content";
 import { EarlyCoachingContent } from "./early-coaching-content";
+import { getRemainingMinutes } from "@/lib/interval";
 import type { TodaySummary } from "@/types/home.type";
 
 interface EarlySmokeContentProps {
@@ -16,13 +17,7 @@ type Mode = "SELECT" | "LIGHT" | "COACHING";
 export function EarlySmokeContent({ summary, onComplete }: EarlySmokeContentProps) {
 	const [mode, setMode] = useState<Mode>("SELECT");
 
-	const remainingMinutes = summary.lastSmokedAt
-		? Math.max(
-				0,
-				summary.targetInterval -
-					Math.round((Date.now() - new Date(summary.lastSmokedAt).getTime()) / 1000 / 60),
-			)
-		: 0;
+	const remainingMinutes = getRemainingMinutes(summary.lastSmokedAt, summary.targetInterval);
 
 	if (mode === "LIGHT") {
 		return <EarlyLightContent summary={summary} onComplete={onComplete} />;
