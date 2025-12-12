@@ -2,6 +2,13 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 
+const NOTIFICATION_CONFIG = {
+	CHANNEL_ID: "interval-reminders",
+	CHANNEL_NAME: "간격 알림",
+	VIBRATION_PATTERN: [0, 250, 250, 250],
+	LIGHT_COLOR: "#000000",
+} as const;
+
 Notifications.setNotificationHandler({
 	handleNotification: async () => ({
 		shouldShowAlert: true,
@@ -12,15 +19,13 @@ Notifications.setNotificationHandler({
 	}),
 });
 
-const CHANNEL_ID = "interval-reminders";
-
 export async function setupNotificationChannel(): Promise<void> {
 	if (Platform.OS === "android") {
-		await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-			name: "간격 알림",
+		await Notifications.setNotificationChannelAsync(NOTIFICATION_CONFIG.CHANNEL_ID, {
+			name: NOTIFICATION_CONFIG.CHANNEL_NAME,
 			importance: Notifications.AndroidImportance.HIGH,
-			vibrationPattern: [0, 250, 250, 250],
-			lightColor: "#000000",
+			vibrationPattern: [...NOTIFICATION_CONFIG.VIBRATION_PATTERN],
+			lightColor: NOTIFICATION_CONFIG.LIGHT_COLOR,
 			sound: "default",
 		});
 	}
@@ -86,7 +91,7 @@ export async function scheduleNotification(
 		trigger: {
 			type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
 			seconds: secondsUntilTrigger,
-			channelId: Platform.OS === "android" ? CHANNEL_ID : undefined,
+			channelId: Platform.OS === "android" ? NOTIFICATION_CONFIG.CHANNEL_ID : undefined,
 		},
 	});
 

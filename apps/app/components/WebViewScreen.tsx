@@ -1,23 +1,12 @@
-import { useRef, useCallback } from "react";
-import { View, StyleSheet, ActivityIndicator, Platform } from "react-native";
+import { useRef, useCallback, useMemo } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "@/hooks/useSession";
-import { useBridge, BridgeMessage } from "@/lib/bridge";
-
-function getBaseUrl(): string {
-	if (!__DEV__) {
-		return "https://interval-web.vercel.app";
-	}
-
-	if (Platform.OS === "android") {
-		return "http://10.0.2.2:3000";
-	}
-
-	return "http://localhost:3000";
-}
-
-const BASE_URL = getBaseUrl();
+import { useBridge, parseBridgeMessage } from "@/lib/bridge";
+import { CONFIG } from "@/lib/config";
+import { COLORS } from "@/lib/theme";
+import { WEBVIEW_PROPS, webViewStyles, createInjectedScript } from "@/lib/webview-config";
 
 interface WebViewScreenProps {
 	path: string;
@@ -26,82 +15,56 @@ interface WebViewScreenProps {
 export function WebViewScreen({ path }: WebViewScreenProps) {
 	const webViewRef = useRef<WebView>(null);
 	const { sessionId } = useSession();
-	const { handleMessage, sendToWeb } = useBridge(webViewRef);
+	const { handleMessage } = useBridge(webViewRef);
 
-	const uri = `${BASE_URL}${path}`;
+	const uri = `${CONFIG.BASE_URL}${path}`;
 
-	const injectedJS = `
-    (function() {
-      window.isNativeApp = true;
-      window.nativeAppVersion = "1.0.0";
-      window.sessionId = "${sessionId || ""}";
-      
-      
-      window.addEventListener('nativeMessage', function(e) {
-        console.log('Message from native:', e.detail);
-      });
-      
-      true;
-    })();
-  `;
+	const injectedJS = useMemo(
+		() =>
+			createInjectedScript({
+				sessionId,
+				appVersion: CONFIG.APP_VERSION,
+			}),
+		[sessionId],
+	);
 
 	const onMessage = useCallback(
 		(event: WebViewMessageEvent) => {
-			try {
-				const data: BridgeMessage = JSON.parse(event.nativeEvent.data);
-				handleMessage(data);
-			} catch (e) {
-				console.error("Failed to parse WebView message:", e);
+			const message = parseBridgeMessage(event.nativeEvent.data);
+			if (message) {
+				handleMessage(message);
 			}
 		},
 		[handleMessage],
 	);
 
+	const renderLoading = useCallback(
+		() => (
+			<View style={webViewStyles.loading}>
+				<ActivityIndicator size="large" color={COLORS.primary} />
+			</View>
+		),
+		[],
+	);
+
+	const onError = useCallback((syntheticEvent: { nativeEvent: { description?: string } }) => {
+		console.error("WebView error:", syntheticEvent.nativeEvent);
+	}, []);
+
 	return (
-		<SafeAreaView style={styles.container} edges={["top"]}>
+		<SafeAreaView style={webViewStyles.container} edges={["top"]}>
 			<WebView
 				ref={webViewRef}
 				source={{ uri }}
-				style={styles.webview}
+				style={webViewStyles.webview}
 				injectedJavaScriptBeforeContentLoaded={injectedJS}
 				onMessage={onMessage}
 				startInLoadingState
-				renderLoading={() => (
-					<View style={styles.loading}>
-						<ActivityIndicator size="large" color="#000" />
-					</View>
-				)}
-				cacheEnabled
-				domStorageEnabled
-				javaScriptEnabled
+				renderLoading={renderLoading}
 				allowsBackForwardNavigationGestures
-				sharedCookiesEnabled
-				mixedContentMode="compatibility"
-				onError={(syntheticEvent) => {
-					const { nativeEvent } = syntheticEvent;
-					console.error("WebView error:", nativeEvent);
-				}}
+				onError={onError}
+				{...WEBVIEW_PROPS}
 			/>
 		</SafeAreaView>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#fff",
-	},
-	webview: {
-		flex: 1,
-	},
-	loading: {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		right: 0,
-		bottom: 0,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#fff",
-	},
-});

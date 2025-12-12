@@ -1,115 +1,89 @@
-import { useRef, useCallback } from "react";
-import { View, StyleSheet, ActivityIndicator, Platform } from "react-native";
+import { useRef, useCallback, useMemo } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useSession } from "@/hooks/useSession";
-import { useBridge, BridgeMessage } from "@/lib/bridge";
-
-function getBaseUrl(): string {
-	if (!__DEV__) {
-		return "https://interval-web.vercel.app";
-	}
-
-	if (Platform.OS === "android") {
-		return "http://10.0.2.2:3000";
-	}
-
-	return "http://localhost:3000";
-}
-
-const BASE_URL = getBaseUrl();
+import { useBridge, parseBridgeMessage, BRIDGE_ACTIONS } from "@/lib/bridge";
+import { CONFIG } from "@/lib/config";
+import { COLORS } from "@/lib/theme";
+import { WEBVIEW_PROPS, webViewStyles, createOnboardingInjectedScript } from "@/lib/webview-config";
 
 export default function OnboardingScreen() {
 	const webViewRef = useRef<WebView>(null);
 	const { createSession } = useSession();
 	const { handleMessage } = useBridge(webViewRef);
 
-	const uri = `${BASE_URL}/onboarding`;
+	const uri = `${CONFIG.BASE_URL}/onboarding`;
 
-	const injectedJS = `
-    (function() {
-      window.isNativeApp = true;
-      window.nativeAppVersion = "1.0.0";
-      true;
-    })();
-  `;
+	const injectedJS = useMemo(() => createOnboardingInjectedScript(CONFIG.APP_VERSION), []);
+
+	const handleOnboardingComplete = useCallback(async () => {
+		await createSession();
+		router.replace("/(tabs)");
+	}, [createSession]);
 
 	const onMessage = useCallback(
 		async (event: WebViewMessageEvent) => {
-			try {
-				const data: BridgeMessage = JSON.parse(event.nativeEvent.data);
-
-				if (data.action === "ONBOARDING_COMPLETE") {
-					await createSession();
-					router.replace("/(tabs)");
-					return;
-				}
-
-				handleMessage(data);
-			} catch (e) {
-				console.error("Failed to parse WebView message:", e);
+			const message = parseBridgeMessage(event.nativeEvent.data);
+			if (!message) {
+				return;
 			}
+
+			if (message.action === BRIDGE_ACTIONS.ONBOARDING_COMPLETE) {
+				await handleOnboardingComplete();
+				return;
+			}
+
+			handleMessage(message);
 		},
-		[handleMessage, createSession],
+		[handleMessage, handleOnboardingComplete],
 	);
 
 	const onNavigationStateChange = useCallback(
 		async (navState: { url: string }) => {
-			const url = new URL(navState.url);
-			if (url.pathname === "/" && !url.pathname.includes("onboarding")) {
-				await createSession();
-				router.replace("/(tabs)");
+			try {
+				const url = new URL(navState.url);
+				const isMainPage = url.pathname === "/" || url.pathname === "/home";
+				const isNotOnboarding = !url.pathname.includes("onboarding");
+
+				if (isMainPage && isNotOnboarding) {
+					await handleOnboardingComplete();
+				}
+			} catch {
+				// Invalid URL, ignore
 			}
 		},
-		[createSession],
+		[handleOnboardingComplete],
 	);
 
+	const renderLoading = useCallback(
+		() => (
+			<View style={webViewStyles.loading}>
+				<ActivityIndicator size="large" color={COLORS.primary} />
+			</View>
+		),
+		[],
+	);
+
+	const onError = useCallback((syntheticEvent: { nativeEvent: { description?: string } }) => {
+		console.error("WebView error:", syntheticEvent.nativeEvent);
+	}, []);
+
 	return (
-		<SafeAreaView style={styles.container} edges={["top"]}>
+		<SafeAreaView style={webViewStyles.container} edges={["top"]}>
 			<WebView
 				ref={webViewRef}
 				source={{ uri }}
-				style={styles.webview}
+				style={webViewStyles.webview}
 				injectedJavaScriptBeforeContentLoaded={injectedJS}
 				onMessage={onMessage}
 				onNavigationStateChange={onNavigationStateChange}
 				startInLoadingState
-				renderLoading={() => (
-					<View style={styles.loading}>
-						<ActivityIndicator size="large" color="#000" />
-					</View>
-				)}
-				cacheEnabled
-				domStorageEnabled
-				javaScriptEnabled
-				sharedCookiesEnabled
-				mixedContentMode="compatibility"
-				onError={(syntheticEvent) => {
-					const { nativeEvent } = syntheticEvent;
-					console.error("WebView error:", nativeEvent);
-				}}
+				renderLoading={renderLoading}
+				onError={onError}
+				{...WEBVIEW_PROPS}
 			/>
 		</SafeAreaView>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#fff",
-	},
-	webview: {
-		flex: 1,
-	},
-	loading: {
-		position: "absolute",
-		top: 0,
-		left: 0,
-		right: 0,
-		bottom: 0,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#fff",
-	},
-});
