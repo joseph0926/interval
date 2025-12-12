@@ -10,9 +10,9 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@firsttx/local-first": "^0.8.3",
-		"@firsttx/prepaint": "^0.6.1",
-		"@firsttx/tx": "^0.5.3",
+		"@firsttx/local-first": "^0.10.0",
+		"@firsttx/prepaint": "^0.8.1",
+		"@firsttx/tx": "^0.6.0",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-dialog": "^1.1.15",
 		"@radix-ui/react-label": "^2.1.8",
@@ -37,7 +37,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
-		"@types/node": "^24.10.1",
+		"@types/node": "^25.0.1",
 		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^5.1.1",

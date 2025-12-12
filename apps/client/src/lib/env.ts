@@ -18,6 +18,23 @@ function validateEnv() {
 	return result.data;
 }
 
-export const env = validateEnv();
+function getApiUrl() {
+	const baseEnv = validateEnv();
+
+	if (
+		typeof window !== "undefined" &&
+		window.location.hostname === "10.0.2.2" &&
+		baseEnv.VITE_API_URL.includes("localhost")
+	) {
+		return {
+			...baseEnv,
+			VITE_API_URL: baseEnv.VITE_API_URL.replace("localhost", "10.0.2.2"),
+		};
+	}
+
+	return baseEnv;
+}
+
+export const env = getApiUrl();
 
 export type Env = z.infer<typeof envSchema>;

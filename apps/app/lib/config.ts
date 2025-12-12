@@ -7,10 +7,10 @@ function getBaseUrl(): string {
 	}
 
 	if (Platform.OS === "android") {
-		return "http://10.0.2.2:3000";
+		return "http://10.0.2.2:5173";
 	}
 
-	return "http://localhost:3000";
+	return "http://localhost:5173";
 }
 
 export const CONFIG = {
