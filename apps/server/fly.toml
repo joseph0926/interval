@@ -5,7 +5,7 @@ app = "interval"
 primary_region = "nrt"
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "apps/server/Dockerfile"
 
 [env]
   NODE_ENV = "production"

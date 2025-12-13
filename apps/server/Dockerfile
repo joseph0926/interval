@@ -8,6 +8,9 @@ WORKDIR /app
 ENV NODE_ENV="production"
 
 
+RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
+
+
 
 
 FROM base AS build
@@ -24,49 +27,55 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/*
 
 
-COPY package*.json ./
-COPY prisma ./prisma/
-
-RUN npm install --include=dev
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 
-RUN npx prisma generate
+COPY apps/server/package.json ./apps/server/
+COPY packages/interval-engine/package.json ./packages/interval-engine/
 
 
-COPY . .
+RUN pnpm install --frozen-lockfile
 
 
-RUN npm run build
+COPY apps/server/prisma ./apps/server/prisma/
+RUN pnpm --filter @interval/server exec prisma generate
 
 
-RUN npm prune --omit=dev
+COPY packages/interval-engine ./packages/interval-engine/
+COPY apps/server ./apps/server/
+
+
+RUN pnpm --filter @interval/engine build
+RUN pnpm --filter @interval/server build
+
+
+RUN pnpm prune --prod
 
 
 
 
 FROM base AS production
 
-
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
     openssl && \
     rm -rf /var/lib/apt/lists/*
 
-
 RUN useradd --create-home --shell /bin/bash appuser
 
 
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/src/generated ./dist/generated
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./
+COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=build /app/apps/server/dist ./apps/server/dist
+COPY --from=build /app/apps/server/prisma ./apps/server/prisma
+COPY --from=build /app/apps/server/package.json ./apps/server/
+COPY --from=build /app/packages/interval-engine/dist ./packages/interval-engine/dist
+COPY --from=build /app/packages/interval-engine/package.json ./packages/interval-engine/
 
+WORKDIR /app/apps/server
 
 USER appuser
 
-
 EXPOSE 3000
-
 
 CMD ["node", "dist/index.js"]
