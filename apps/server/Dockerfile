@@ -50,7 +50,7 @@ RUN pnpm --filter @interval/engine build
 RUN pnpm --filter @interval/server build
 
 
-RUN pnpm prune --prod
+RUN pnpm prune --prod --ignore-scripts
 
 
 
