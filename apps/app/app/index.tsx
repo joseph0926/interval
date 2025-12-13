@@ -1,6 +1,7 @@
 import { Redirect } from "expo-router";
 import { useSession } from "@/hooks/useSession";
 import { View, ActivityIndicator } from "react-native";
+import { WebViewScreen } from "@/components/WebViewScreen";
 
 export default function Index() {
 	const { isLoading, hasSession } = useSession();
@@ -17,5 +18,5 @@ export default function Index() {
 		return <Redirect href="/onboarding" />;
 	}
 
-	return <Redirect href="/(tabs)" />;
+	return <WebViewScreen path="/" />;
 }

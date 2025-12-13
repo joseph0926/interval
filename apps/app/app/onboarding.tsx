@@ -20,7 +20,7 @@ export default function OnboardingScreen() {
 
 	const handleOnboardingComplete = useCallback(async () => {
 		await createSession();
-		router.replace("/(tabs)");
+		router.replace("/");
 	}, [createSession]);
 
 	const onMessage = useCallback(

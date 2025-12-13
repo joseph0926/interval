@@ -13,15 +13,28 @@ export function getTodayDateString(dayStartTime: string): string {
 		targetDate.setDate(targetDate.getDate() - 1);
 	}
 
-	return targetDate.toISOString().split("T")[0];
+	const year = targetDate.getFullYear();
+	const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+	const day = String(targetDate.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
 }
 
 export function getTodayRange(dayStartTime: string): { start: Date; end: Date } {
-	const todayStr = getTodayDateString(dayStartTime);
+	const now = new Date();
 	const [startHour, startMinute] = dayStartTime.split(":").map(Number);
 
-	const start = new Date(todayStr);
+	const currentHour = now.getHours();
+	const currentMinute = now.getMinutes();
+
+	const isBeforeDayStart =
+		currentHour < startHour || (currentHour === startHour && currentMinute < startMinute);
+
+	const start = new Date(now);
 	start.setHours(startHour, startMinute, 0, 0);
+
+	if (isBeforeDayStart) {
+		start.setDate(start.getDate() - 1);
+	}
 
 	const end = new Date(start);
 	end.setDate(end.getDate() + 1);
@@ -30,12 +43,7 @@ export function getTodayRange(dayStartTime: string): { start: Date; end: Date } 
 }
 
 export function getWeekRange(dayStartTime: string): { start: Date; end: Date } {
-	const todayStr = getTodayDateString(dayStartTime);
-	const [startHour, startMinute] = dayStartTime.split(":").map(Number);
-
-	const end = new Date(todayStr);
-	end.setHours(startHour, startMinute, 0, 0);
-	end.setDate(end.getDate() + 1);
+	const { end } = getTodayRange(dayStartTime);
 
 	const start = new Date(end);
 	start.setDate(start.getDate() - 7);
