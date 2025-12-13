@@ -5,15 +5,32 @@ import { toast } from "sonner";
 import { WelcomeStep } from "./steps/welcome-step";
 import { ModuleSelectStep } from "./steps/module-select-step";
 import { SmokingAmountStep } from "./steps/smoking-amount-step";
-import { TargetIntervalStep } from "./steps/target-interval-step";
+import { ModuleIntervalStep, getDefaultInterval } from "./steps/module-interval-step";
 import { MotivationStep } from "./steps/motivation-step";
 import { StepIndicator } from "./step-indicator";
 import { api } from "@/lib/api";
-import type { OnboardingData, OnboardingStep, DailySmokingRange } from "@/types/onboarding.type";
+import type { DailySmokingRange } from "@/types/onboarding.type";
 import type { EngineModuleType } from "@/lib/api-types";
 
-interface OnboardingDataExtended extends OnboardingData {
+type OnboardingStep =
+	| "welcome"
+	| "module-select"
+	| "smoking-amount"
+	| `interval-${EngineModuleType}`
+	| "motivation";
+
+interface ModuleIntervalData {
+	SMOKE: number;
+	SNS: number;
+	CAFFEINE: number;
+	FOCUS: number;
+}
+
+interface OnboardingDataState {
 	selectedModules: EngineModuleType[];
+	dailySmokingRange: DailySmokingRange | null;
+	moduleIntervals: ModuleIntervalData;
+	motivation: string;
 }
 
 export function OnboardingFlow() {
@@ -21,31 +38,38 @@ export function OnboardingFlow() {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
 	const [isPending, setIsPending] = useState(false);
 	const [error, setError] = useState<string>();
-	const [data, setData] = useState<OnboardingDataExtended>({
-		jobType: null,
-		enabledModules: ["SMOKING"],
-		dailySmokingRange: null,
-		targetInterval: 60,
-		motivation: "",
-		dayStartTime: "04:00",
-		nickname: "",
+	const [data, setData] = useState<OnboardingDataState>({
 		selectedModules: [],
+		dailySmokingRange: null,
+		moduleIntervals: {
+			SMOKE: 60,
+			SNS: 30,
+			CAFFEINE: 180,
+			FOCUS: 25,
+		},
+		motivation: "",
 	});
 
 	const steps = useMemo<OnboardingStep[]>(() => {
-		const base: OnboardingStep[] = ["welcome", "module-select"];
+		const result: OnboardingStep[] = ["welcome", "module-select"];
+
 		if (data.selectedModules.includes("SMOKE")) {
-			base.push("smoking-amount", "target-interval");
+			result.push("smoking-amount");
 		}
-		base.push("motivation");
-		return base;
+
+		for (const moduleType of data.selectedModules) {
+			result.push(`interval-${moduleType}` as OnboardingStep);
+		}
+
+		result.push("motivation");
+		return result;
 	}, [data.selectedModules]);
 
 	const stepIndex = steps.indexOf(currentStep);
 	const isFirstStep = stepIndex === 0;
 	const isLastStep = stepIndex === steps.length - 1;
 
-	const goNext = async () => {
+	const goNext = () => {
 		if (!isLastStep) {
 			setCurrentStep(steps[stepIndex + 1]);
 		}
@@ -74,8 +98,30 @@ export function OnboardingFlow() {
 		}
 	};
 
-	const updateData = (partial: Partial<OnboardingDataExtended>) => {
-		setData((prev) => ({ ...prev, ...partial }));
+	const updateModuleInterval = (moduleType: EngineModuleType, value: number) => {
+		setData((prev) => ({
+			...prev,
+			moduleIntervals: {
+				...prev.moduleIntervals,
+				[moduleType]: value,
+			},
+		}));
+	};
+
+	const handleModuleSelect = (modules: EngineModuleType[]) => {
+		setData((prev) => {
+			const newIntervals = { ...prev.moduleIntervals };
+			for (const moduleType of modules) {
+				if (!prev.selectedModules.includes(moduleType)) {
+					newIntervals[moduleType] = getDefaultInterval(moduleType);
+				}
+			}
+			return {
+				...prev,
+				selectedModules: modules,
+				moduleIntervals: newIntervals,
+			};
+		});
 	};
 
 	const handleSubmit = async () => {
@@ -88,21 +134,16 @@ export function OnboardingFlow() {
 			const modules = data.selectedModules.map((moduleType) => ({
 				moduleType,
 				enabled: true,
-				targetIntervalMin:
-					moduleType === "SMOKE"
-						? data.targetInterval
-						: moduleType === "SNS"
-							? 30
-							: moduleType === "CAFFEINE"
-								? 180
-								: 10,
+				targetIntervalMin: data.moduleIntervals[moduleType],
 			}));
 
 			const res = await api.onboarding.complete({
 				dailySmokingRange: data.selectedModules.includes("SMOKE")
 					? (data.dailySmokingRange ?? undefined)
 					: undefined,
-				targetInterval: data.selectedModules.includes("SMOKE") ? data.targetInterval : undefined,
+				targetInterval: data.selectedModules.includes("SMOKE")
+					? data.moduleIntervals.SMOKE
+					: undefined,
 				motivation: data.motivation || undefined,
 				modules,
 			});
@@ -123,6 +164,17 @@ export function OnboardingFlow() {
 	const progressStepIndex = stepIndex > 0 ? stepIndex - 1 : 0;
 	const progressTotal = steps.length - 1;
 
+	const renderIntervalStep = (moduleType: EngineModuleType) => (
+		<ModuleIntervalStep
+			key={`interval-${moduleType}`}
+			moduleType={moduleType}
+			value={data.moduleIntervals[moduleType]}
+			onChange={(value) => updateModuleInterval(moduleType, value)}
+			onNext={goNext}
+			onPrev={goPrev}
+		/>
+	);
+
 	return (
 		<div className="flex min-h-dvh flex-col">
 			{currentStep !== "welcome" && (
@@ -139,7 +191,7 @@ export function OnboardingFlow() {
 						<ModuleSelectStep
 							key="module-select"
 							value={data.selectedModules}
-							onChange={(value: EngineModuleType[]) => updateData({ selectedModules: value })}
+							onChange={handleModuleSelect}
 							onNext={goNext}
 							onPrev={goPrev}
 						/>
@@ -148,30 +200,27 @@ export function OnboardingFlow() {
 						<SmokingAmountStep
 							key="smoking-amount"
 							value={data.dailySmokingRange}
-							onChange={(value: DailySmokingRange) => updateData({ dailySmokingRange: value })}
+							onChange={(value: DailySmokingRange) =>
+								setData((prev) => ({ ...prev, dailySmokingRange: value }))
+							}
 							onNext={goNext}
 							onPrev={goPrev}
 						/>
 					)}
-					{currentStep === "target-interval" && (
-						<TargetIntervalStep
-							key="target-interval"
-							value={data.targetInterval}
-							smokingRange={data.dailySmokingRange}
-							onChange={(value: number) => updateData({ targetInterval: value })}
-							onNext={goNext}
-							onPrev={goPrev}
-						/>
-					)}
+					{currentStep === "interval-SMOKE" && renderIntervalStep("SMOKE")}
+					{currentStep === "interval-SNS" && renderIntervalStep("SNS")}
+					{currentStep === "interval-CAFFEINE" && renderIntervalStep("CAFFEINE")}
+					{currentStep === "interval-FOCUS" && renderIntervalStep("FOCUS")}
 					{currentStep === "motivation" && (
 						<MotivationStep
 							key="motivation"
 							value={data.motivation}
-							onChange={(value: string) => updateData({ motivation: value })}
+							onChange={(value: string) => setData((prev) => ({ ...prev, motivation: value }))}
 							onSubmit={handleSubmit}
 							isPending={isPending}
 							error={error}
 							onPrev={goPrev}
+							selectedModules={data.selectedModules}
 						/>
 					)}
 				</AnimatePresence>

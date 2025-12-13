@@ -11,6 +11,7 @@ interface UserEntity {
 	dayStartTime: string;
 	currentTargetInterval: number;
 	currentMotivation: string | null;
+	onboardingCompleted: boolean;
 }
 
 interface UserSettingsEntity extends UserEntity {
@@ -29,6 +30,7 @@ export function toUserDto(user: UserEntity): UserDto {
 		dayStartTime: user.dayStartTime,
 		currentTargetInterval: user.currentTargetInterval,
 		currentMotivation: user.currentMotivation,
+		onboardingCompleted: user.onboardingCompleted,
 	};
 }
 

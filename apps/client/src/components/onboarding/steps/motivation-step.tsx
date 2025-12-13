@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StepTransition } from "../step-transition";
 import { ChevronLeft } from "lucide-react";
+import type { EngineModuleType } from "@/lib/api-types";
 
 interface MotivationStepProps {
 	value: string;
@@ -10,13 +11,42 @@ interface MotivationStepProps {
 	isPending: boolean;
 	error?: string;
 	onPrev: () => void;
+	selectedModules?: EngineModuleType[];
 }
 
-const PLACEHOLDERS = [
-	"기침이 너무 심해서 조금 줄이고 싶어요.",
-	"아이 앞에서 냄새를 줄이고 싶어요.",
-	"건강검진 전에 조금이라도 줄여보고 싶어요.",
+const PLACEHOLDERS_BY_MODULE: Record<EngineModuleType, string[]> = {
+	SMOKE: [
+		"기침이 너무 심해서 조금 줄이고 싶어요.",
+		"아이 앞에서 냄새를 줄이고 싶어요.",
+		"건강검진 전에 조금이라도 줄여보고 싶어요.",
+	],
+	SNS: [
+		"하루에 폰 보는 시간이 너무 많아져서요.",
+		"집중력이 떨어지는 것 같아요.",
+		"자기 전에 폰 보는 습관을 줄이고 싶어요.",
+	],
+	CAFFEINE: [
+		"밤에 잠을 잘 못 자서요.",
+		"하루에 커피를 너무 많이 마셔서요.",
+		"카페인 의존도를 줄이고 싶어요.",
+	],
+	FOCUS: ["집중력을 더 키우고 싶어요.", "일의 효율을 높이고 싶어요.", "딴짓을 줄이고 싶어요."],
+};
+
+const DEFAULT_PLACEHOLDERS = [
+	"조금씩 변화해보고 싶어요.",
+	"더 건강한 습관을 만들고 싶어요.",
+	"스스로를 컨트롤하고 싶어요.",
 ];
+
+function getPlaceholders(selectedModules?: EngineModuleType[]): string[] {
+	if (!selectedModules || selectedModules.length === 0) {
+		return DEFAULT_PLACEHOLDERS;
+	}
+
+	const primaryModule = selectedModules[0];
+	return PLACEHOLDERS_BY_MODULE[primaryModule] || DEFAULT_PLACEHOLDERS;
+}
 
 export function MotivationStep({
 	value,
@@ -25,7 +55,10 @@ export function MotivationStep({
 	isPending,
 	error,
 	onPrev,
+	selectedModules,
 }: MotivationStepProps) {
+	const placeholders = getPlaceholders(selectedModules);
+
 	return (
 		<StepTransition>
 			<div className="flex flex-1 flex-col px-6 py-6">
@@ -49,12 +82,12 @@ export function MotivationStep({
 					<Textarea
 						value={value}
 						onChange={(e) => onChange(e.target.value)}
-						placeholder={PLACEHOLDERS[0]}
+						placeholder={placeholders[0]}
 						className="min-h-32 resize-none rounded-xl text-base"
 					/>
 				</div>
 				<div className="mt-6 flex flex-wrap gap-2">
-					{PLACEHOLDERS.map((placeholder) => (
+					{placeholders.map((placeholder) => (
 						<button
 							key={placeholder}
 							type="button"
