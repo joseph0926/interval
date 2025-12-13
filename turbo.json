@@ -11,11 +11,12 @@
 			"env": ["NODE_ENV", "DATABASE_URL", "SESSION_SECRET", "CORS_ORIGIN", "VITE_API_URL"]
 		},
 		"typecheck": {
-			"dependsOn": ["^typecheck"]
+			"dependsOn": ["^typecheck", "^build"]
 		},
 		"dev": {
 			"persistent": true,
-			"cache": false
+			"cache": false,
+			"dependsOn": ["^build"]
 		}
 	}
 }

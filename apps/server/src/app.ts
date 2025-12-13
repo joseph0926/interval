@@ -10,6 +10,7 @@ import { settingsRoutes } from "./routes/settings.js";
 import { reportRoutes } from "./routes/report.js";
 import { onboardingRoutes } from "./routes/onboarding.js";
 import { gamificationRoutes } from "./routes/gamification.js";
+import { engineRoutes } from "./routes/engine.js";
 
 export function buildApp() {
 	const app = Fastify({
@@ -40,6 +41,7 @@ export function buildApp() {
 	app.register(reportRoutes, { prefix: "/api/report" });
 	app.register(onboardingRoutes, { prefix: "/api/onboarding" });
 	app.register(gamificationRoutes, { prefix: "/api/gamification" });
+	app.register(engineRoutes, { prefix: "/api/engine" });
 
 	app.get("/api/health", async () => {
 		return { status: "ok", timestamp: new Date().toISOString() };

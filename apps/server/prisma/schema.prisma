@@ -16,15 +16,18 @@ model User {
   enabledModules        String[] @default(["SMOKING"])
   dailySmokingRange     String?
   dayStartTime          String   @default("04:00")
+  dayAnchorMinutes      Int      @default(240)
   currentTargetInterval Int      @default(60)
   currentMotivation     String?
   onboardingCompleted   Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  smokingRecords SmokingRecord[]
-  delayLogs      DelayLog[]
-  badges         UserBadge[]
+  smokingRecords  SmokingRecord[]
+  delayLogs       DelayLog[]
+  badges          UserBadge[]
+  moduleSettings  UserModuleSetting[]
+  intervalEvents  IntervalEvent[]
 
   notifyOnTargetTime  Boolean @default(true)
   notifyMorningDelay  Boolean @default(true)
@@ -76,4 +79,41 @@ model UserBadge {
 
   @@unique([userId, type])
   @@index([userId])
+}
+
+model UserModuleSetting {
+  id                String   @id @default(uuid())
+  userId            String
+  moduleType        String
+  enabled           Boolean  @default(true)
+  targetIntervalMin Int      @default(60)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleType])
+  @@index([userId])
+}
+
+model IntervalEvent {
+  id             String   @id @default(uuid())
+  userId         String
+  moduleType     String
+  eventType      String
+  timestamp      DateTime
+  localDayKey    String
+  actionKind     String?
+  delayMinutes   Int?
+  reasonLabel    String?
+  triggerContext String?
+  payload        Json?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, moduleType])
+  @@index([userId, moduleType, localDayKey])
+  @@index([userId, localDayKey])
 }

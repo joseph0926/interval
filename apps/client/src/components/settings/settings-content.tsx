@@ -5,6 +5,8 @@ import { MotivationSettingCard } from "./motivation-setting-card";
 import { NotificationSettingCard } from "./notification-setting-card";
 import { DataSettingCard } from "./data-setting-card";
 import { AppInfoCard } from "./app-info-card";
+import { ModuleSettingsCard } from "./module-settings-card";
+import { DayAnchorSettingCard } from "./day-anchor-setting-card";
 import { fadeIn, slideUp, createStaggeredDelay } from "@/lib/motion";
 import type { Settings } from "@/types/settings.type";
 
@@ -30,7 +32,7 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					animate="visible"
 					transition={createStaggeredDelay(0, 0.05)}
 				>
-					<IntervalSettingCard currentInterval={settings.currentTargetInterval} />
+					<ModuleSettingsCard />
 				</motion.div>
 				<motion.div
 					variants={slideUp}
@@ -38,13 +40,29 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					animate="visible"
 					transition={createStaggeredDelay(1, 0.05)}
 				>
-					<MotivationSettingCard currentMotivation={settings.currentMotivation} />
+					<DayAnchorSettingCard />
 				</motion.div>
 				<motion.div
 					variants={slideUp}
 					initial="hidden"
 					animate="visible"
 					transition={createStaggeredDelay(2, 0.05)}
+				>
+					<IntervalSettingCard currentInterval={settings.currentTargetInterval} />
+				</motion.div>
+				<motion.div
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(3, 0.05)}
+				>
+					<MotivationSettingCard currentMotivation={settings.currentMotivation} />
+				</motion.div>
+				<motion.div
+					variants={slideUp}
+					initial="hidden"
+					animate="visible"
+					transition={createStaggeredDelay(4, 0.05)}
 				>
 					<NotificationSettingCard
 						notificationEnabled={settings.notifyOnTargetTime}
@@ -55,7 +73,7 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					variants={slideUp}
 					initial="hidden"
 					animate="visible"
-					transition={createStaggeredDelay(3, 0.05)}
+					transition={createStaggeredDelay(5, 0.05)}
 				>
 					<DataSettingCard isGuest={settings.isGuest} />
 				</motion.div>
@@ -63,7 +81,7 @@ export function SettingsContent({ settings }: SettingsContentProps) {
 					variants={slideUp}
 					initial="hidden"
 					animate="visible"
-					transition={createStaggeredDelay(4, 0.05)}
+					transition={createStaggeredDelay(6, 0.05)}
 				>
 					<AppInfoCard />
 				</motion.div>

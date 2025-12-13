@@ -1,5 +1,5 @@
-import { HomeContent } from "@/components/home/home-content";
+import { EngineHomeContent } from "@/components/home/engine-home-content";
 
 export function HomePage() {
-	return <HomeContent />;
+	return <EngineHomeContent />;
 }

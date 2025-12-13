@@ -11,6 +11,14 @@ import type {
 	RecordType,
 	ReasonCode,
 	CoachingMode,
+	EngineTodaySummary,
+	EngineModuleState,
+	EngineIntervalEvent,
+	EngineSettings,
+	EngineWeeklyReport,
+	EngineModuleType,
+	EngineReasonLabel,
+	EngineTriggerContext,
 } from "./api-types";
 
 const client = axios.create({
@@ -145,6 +153,87 @@ export const api = {
 		status: async () => {
 			const res = await client.get<{ success: boolean; data: GamificationStatus }>(
 				"/api/gamification/status",
+			);
+			return res.data;
+		},
+	},
+
+	engine: {
+		today: async () => {
+			const res = await client.get<{ success: boolean; data: EngineTodaySummary }>(
+				"/api/engine/today",
+			);
+			return res.data;
+		},
+
+		action: async (data: {
+			moduleType: EngineModuleType;
+			timestamp?: string;
+			reasonLabel?: EngineReasonLabel;
+			actionKind?: "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+		}) => {
+			const res = await client.post<{
+				success: boolean;
+				event: EngineIntervalEvent;
+				moduleState: EngineModuleState;
+			}>("/api/engine/events/action", data);
+			return res.data;
+		},
+
+		delay: async (data: {
+			moduleType: EngineModuleType;
+			delayMinutes: 1 | 3 | 5 | 10;
+			triggerContext: EngineTriggerContext;
+			timestamp?: string;
+		}) => {
+			const res = await client.post<{
+				success: boolean;
+				event: EngineIntervalEvent;
+				moduleState: EngineModuleState;
+			}>("/api/engine/events/delay", data);
+			return res.data;
+		},
+
+		adjustment: async (data: {
+			moduleType: EngineModuleType;
+			adjustmentKind: "RESET_BASELINE" | "APPROXIMATE_LOG";
+			payload?: Record<string, unknown>;
+		}) => {
+			const res = await client.post<{
+				success: boolean;
+				event: EngineIntervalEvent;
+				moduleState: EngineModuleState;
+			}>("/api/engine/events/adjustment", data);
+			return res.data;
+		},
+
+		weeklyReport: async (weekStart?: string) => {
+			const params = weekStart ? { weekStart } : {};
+			const res = await client.get<{ success: boolean; data: EngineWeeklyReport }>(
+				"/api/engine/report/weekly",
+				{ params },
+			);
+			return res.data;
+		},
+
+		getSettings: async () => {
+			const res = await client.get<{ success: boolean; data: EngineSettings }>(
+				"/api/engine/settings",
+			);
+			return res.data;
+		},
+
+		updateSettings: async (data: {
+			dayAnchorMinutes?: number;
+			modules?: Array<{
+				moduleType: EngineModuleType;
+				enabled?: boolean;
+				targetIntervalMin?: number;
+			}>;
+		}) => {
+			const res = await client.put<{ success: boolean; data: EngineSettings }>(
+				"/api/engine/settings",
+				data,
 			);
 			return res.data;
 		},

@@ -10,6 +10,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@interval/engine": "workspace:*",
 		"@firsttx/local-first": "^0.10.0",
 		"@firsttx/prepaint": "^0.8.1",
 		"@firsttx/tx": "^0.6.0",

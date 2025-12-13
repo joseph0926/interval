@@ -14,6 +14,98 @@ export type JobType = "OFFICE" | "REMOTE" | "SHIFT" | "FIELD" | "OTHER";
 
 export type ModuleType = "SMOKING" | "SNS" | "FOCUS" | "COFFEE";
 
+export type EngineModuleType = "SMOKE" | "SNS" | "CAFFEINE" | "FOCUS";
+
+export type EngineModuleStatus =
+	| "DISABLED"
+	| "SETUP_REQUIRED"
+	| "NO_BASELINE"
+	| "COUNTDOWN"
+	| "READY"
+	| "GAP_DETECTED";
+
+export type EngineReasonLabel = "BREAK" | "BORED" | "STRESS" | "HABIT" | "AVOID" | "LINK" | "OTHER";
+
+export type EngineTriggerContext = "EARLY_URGE" | "FLOATING_CARD" | "FOCUS_EXTEND" | "MANUAL";
+
+export type EngineCtaKey = "LOG_ACTION" | "URGE" | "RECOVER";
+
+export interface EngineCtaPrimary {
+	key: EngineCtaKey;
+	enabled: boolean;
+}
+
+export interface EngineModuleState {
+	moduleType: EngineModuleType;
+	status: EngineModuleStatus;
+	lastActionTime?: string;
+	targetIntervalMin?: number;
+	targetTime?: string;
+	remainingMin?: number;
+	actualIntervalMin?: number;
+	todayEarnedMin: number;
+	todayLostMin: number;
+	todayNetMin: number;
+	ctaPrimary: EngineCtaPrimary;
+}
+
+export interface EngineIntegratedSummary {
+	earnedMin: number;
+	lostMin: number;
+	netMin: number;
+	level?: number;
+	nextLevelRemainingMin?: number;
+}
+
+export interface EngineTodaySummary {
+	dayKey: string;
+	integrated: EngineIntegratedSummary;
+	modules: EngineModuleState[];
+}
+
+export interface EngineIntervalEvent {
+	id: string;
+	userId: string;
+	moduleType: EngineModuleType;
+	eventType: "ACTION" | "DELAY" | "ADJUSTMENT";
+	timestamp: string;
+	localDayKey: string;
+	actionKind?: "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+	delayMinutes?: number;
+	reasonLabel?: EngineReasonLabel;
+	triggerContext?: EngineTriggerContext;
+	payload?: Record<string, unknown>;
+}
+
+export interface EngineModuleSetting {
+	moduleType: EngineModuleType;
+	enabled: boolean;
+	targetIntervalMin: number;
+}
+
+export interface EngineSettings {
+	dayAnchorMinutes: number;
+	modules: EngineModuleSetting[];
+}
+
+export interface EngineWeeklyModuleReport {
+	moduleType: EngineModuleType;
+	earnedMin: number;
+	lostMin: number;
+	netMin: number;
+	avgIntervalMin?: number;
+}
+
+export interface EngineWeeklyReport {
+	weekStartDayKey: string;
+	integrated: {
+		earnedMin: number;
+		lostMin: number;
+		netMin: number;
+	};
+	modules: EngineWeeklyModuleReport[];
+}
+
 export interface User {
 	id: string;
 	isGuest: boolean;
