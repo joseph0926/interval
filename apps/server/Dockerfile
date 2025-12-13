@@ -16,6 +16,7 @@ RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
 FROM base AS build
 
 ENV NODE_ENV="development"
+ENV CI="true"
 
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
