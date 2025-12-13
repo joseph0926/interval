@@ -3,6 +3,7 @@ import { ReportContent } from "@/components/report/report-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { transformReportData } from "@/lib/report-utils";
+import type { EngineWeeklyReport } from "@/lib/api-types";
 
 function useReportData() {
 	const [weeklyData, setWeeklyData] = useState<Awaited<
@@ -11,6 +12,7 @@ function useReportData() {
 	const [streakData, setStreakData] = useState<Awaited<
 		ReturnType<typeof api.report.streak>
 	> | null>(null);
+	const [engineReport, setEngineReport] = useState<EngineWeeklyReport | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
@@ -19,10 +21,17 @@ function useReportData() {
 		async function fetchData() {
 			setIsLoading(true);
 			try {
-				const [weekly, streak] = await Promise.all([api.report.weekly(), api.report.streak()]);
+				const [weekly, streak, engine] = await Promise.all([
+					api.report.weekly(),
+					api.report.streak(),
+					api.engine.weeklyReport().catch(() => null),
+				]);
 				if (!cancelled) {
 					setWeeklyData(weekly);
 					setStreakData(streak);
+					if (engine?.success && engine.data) {
+						setEngineReport(engine.data);
+					}
 				}
 			} finally {
 				if (!cancelled) {
@@ -42,7 +51,7 @@ function useReportData() {
 		[weeklyData, streakData],
 	);
 
-	return { data: reportData, isLoading };
+	return { data: reportData, engineReport, isLoading };
 }
 
 function ReportSkeleton() {
@@ -53,6 +62,7 @@ function ReportSkeleton() {
 				<Skeleton className="mt-2 h-6 w-48" />
 			</div>
 			<div className="flex flex-col gap-4 px-6 py-6">
+				<Skeleton className="h-48 w-full rounded-xl" />
 				<Skeleton className="h-28 w-full rounded-xl" />
 				<Skeleton className="h-44 w-full rounded-xl" />
 				<Skeleton className="h-36 w-full rounded-xl" />
@@ -63,11 +73,11 @@ function ReportSkeleton() {
 }
 
 export function ReportPage() {
-	const { data, isLoading } = useReportData();
+	const { data, engineReport, isLoading } = useReportData();
 
 	if (isLoading) {
 		return <ReportSkeleton />;
 	}
 
-	return <ReportContent data={data} />;
+	return <ReportContent data={data} engineReport={engineReport ?? undefined} />;
 }

@@ -17,6 +17,7 @@ import {
 	TriggerContextSchema,
 	AdjustmentKindSchema,
 	validateTimestampNotTooFarInFuture,
+	ModuleConfigSchema,
 } from "@interval/engine";
 
 const actionInputSchema = z.object({
@@ -24,6 +25,7 @@ const actionInputSchema = z.object({
 	timestamp: z.string().datetime().optional(),
 	reasonLabel: ReasonLabelSchema.optional(),
 	actionKind: ActionKindSchema.optional(),
+	payload: z.record(z.string(), z.unknown()).optional(),
 });
 
 const delayInputSchema = z.object({
@@ -47,6 +49,7 @@ const updateSettingsInputSchema = z.object({
 				moduleType: ModuleTypeSchema,
 				enabled: z.boolean().optional(),
 				targetIntervalMin: z.number().int().min(1).max(480).optional(),
+				config: ModuleConfigSchema.optional(),
 			}),
 		)
 		.optional(),

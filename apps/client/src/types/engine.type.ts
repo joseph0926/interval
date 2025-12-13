@@ -6,13 +6,21 @@ export type {
 	EngineIntegratedSummary,
 	EngineReasonLabel,
 	EngineTriggerContext,
+	EngineFloatingSuggestion,
+	EngineFocusSessionInfo,
+	EngineActionKind,
+	EngineSessionEndReason,
+	EngineCtaKey,
 } from "@/lib/api-types";
 
 export type ModuleCardState =
 	| { type: "NO_BASELINE" }
 	| { type: "COUNTDOWN"; targetTime: Date; remainingSeconds: number }
 	| { type: "READY" }
-	| { type: "GAP_DETECTED" };
+	| { type: "GAP_DETECTED" }
+	| { type: "FOCUS_IDLE" }
+	| { type: "FOCUS_RUNNING"; elapsedSeconds: number; remainingSeconds: number }
+	| { type: "FOCUS_COACHING" };
 
 export interface ModuleConfig {
 	moduleType: "SMOKE" | "SNS" | "CAFFEINE" | "FOCUS";
@@ -21,6 +29,7 @@ export interface ModuleConfig {
 	actionLabel: string;
 	urgeLabel: string;
 	color: string;
+	isSessionBased?: boolean;
 }
 
 export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
@@ -52,8 +61,24 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
 		moduleType: "FOCUS",
 		label: "집중",
 		icon: "🎯",
-		actionLabel: "시작/종료",
-		urgeLabel: "집중하기",
+		actionLabel: "세션 종료",
+		urgeLabel: "딴짓하고 싶어요",
 		color: "text-purple-500",
+		isSessionBased: true,
 	},
 };
+
+export const INTERVAL_MODULES = ["SMOKE", "SNS", "CAFFEINE"] as const;
+export const SESSION_MODULES = ["FOCUS"] as const;
+
+export function isIntervalModule(moduleType: string): boolean {
+	return INTERVAL_MODULES.includes(moduleType as (typeof INTERVAL_MODULES)[number]);
+}
+
+export function isSessionModule(moduleType: string): boolean {
+	return SESSION_MODULES.includes(moduleType as (typeof SESSION_MODULES)[number]);
+}
+
+export function isFocusStatus(status: string): boolean {
+	return status === "FOCUS_IDLE" || status === "FOCUS_RUNNING" || status === "FOCUS_COACHING";
+}

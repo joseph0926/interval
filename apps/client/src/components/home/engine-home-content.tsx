@@ -5,7 +5,12 @@ import { api } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ModuleCard, ModuleDrawer, IntegratedSummaryCard } from "@/components/module";
+import {
+	ModuleCard,
+	ModuleDrawer,
+	IntegratedSummaryCard,
+	FloatingSuggestionCard,
+} from "@/components/module";
 import { EngineTodaySummaryModel } from "@/models/engine-today-summary.model";
 import type { EngineTodaySummary, EngineModuleState } from "@/types/engine.type";
 
@@ -76,6 +81,12 @@ export function EngineHomeContent() {
 				<motion.div variants={staggerItem} className="px-6 py-6">
 					<IntegratedSummaryCard integrated={summary.integrated} />
 				</motion.div>
+
+				{summary.floatingSuggestion && (
+					<motion.div variants={staggerItem} className="px-6 pb-4">
+						<FloatingSuggestionCard suggestion={summary.floatingSuggestion} onComplete={sync} />
+					</motion.div>
+				)}
 
 				<div className="flex flex-1 flex-col gap-4 px-6 pb-6">
 					{enabledModules.map((moduleState, idx) => (

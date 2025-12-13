@@ -4,20 +4,40 @@ import {
 	calculateWeeklyReport,
 	getLocalDayKey,
 	getWeekStartDayKey,
+	getElapsedMinutes,
 	type ModuleType,
 	type ModuleSetting,
 	type TodaySummary,
 	type WeeklyReport,
 	type IntervalEvent,
 	type ModuleState,
+	type ModuleConfig,
+	isSessionModule,
 } from "@interval/engine";
 
-const DEFAULT_MODULE_SETTINGS: Record<string, ModuleSetting> = {
+const DEFAULT_MODULE_SETTINGS: Record<string, Omit<ModuleSetting, "config">> = {
 	SMOKE: { moduleType: "SMOKE", enabled: true, targetIntervalMin: 60 },
 	SNS: { moduleType: "SNS", enabled: false, targetIntervalMin: 30 },
 	CAFFEINE: { moduleType: "CAFFEINE", enabled: false, targetIntervalMin: 180 },
 	FOCUS: { moduleType: "FOCUS", enabled: false, targetIntervalMin: 25 },
 };
+
+const DEFAULT_MODULE_CONFIG: Record<string, ModuleConfig> = {
+	CAFFEINE: { dailyGoalCount: undefined },
+	FOCUS: { defaultSessionMin: 10 },
+};
+
+function parseModuleConfig(configJson: unknown): ModuleConfig | undefined {
+	if (!configJson || typeof configJson !== "object") {
+		return undefined;
+	}
+	const config = configJson as Record<string, unknown>;
+	return {
+		dailyGoalCount: typeof config.dailyGoalCount === "number" ? config.dailyGoalCount : undefined,
+		defaultSessionMin:
+			typeof config.defaultSessionMin === "number" ? config.defaultSessionMin : undefined,
+	};
+}
 
 async function getUserSettings(userId: string) {
 	const user = await prisma.user.findUniqueOrThrow({
@@ -33,10 +53,13 @@ async function getUserSettings(userId: string) {
 	for (const moduleType of moduleTypes) {
 		const existing = user.moduleSettings.find((s) => s.moduleType === moduleType);
 		if (existing) {
+			const parsedConfig = parseModuleConfig(existing.configJson);
+			const defaultConfig = DEFAULT_MODULE_CONFIG[moduleType];
 			moduleSettings.push({
 				moduleType: moduleType as ModuleType,
 				enabled: existing.enabled,
 				targetIntervalMin: existing.targetIntervalMin,
+				config: parsedConfig ?? defaultConfig,
 			});
 		} else {
 			const fallback = DEFAULT_MODULE_SETTINGS[moduleType];
@@ -47,7 +70,10 @@ async function getUserSettings(userId: string) {
 					targetIntervalMin: user.currentTargetInterval ?? 60,
 				});
 			} else {
-				moduleSettings.push(fallback);
+				moduleSettings.push({
+					...fallback,
+					config: DEFAULT_MODULE_CONFIG[moduleType],
+				});
 			}
 		}
 	}
@@ -146,6 +172,7 @@ export async function createActionEvent(
 		timestamp?: string;
 		reasonLabel?: IntervalEvent["reasonLabel"];
 		actionKind?: IntervalEvent["actionKind"];
+		payload?: Record<string, unknown>;
 	},
 ): Promise<CreateEventResult> {
 	const { dayAnchorMinutes, moduleSettings } = await getUserSettings(userId);
@@ -157,16 +184,49 @@ export async function createActionEvent(
 		throw new Error(`Module ${input.moduleType} is not enabled`);
 	}
 
-	const recentEvent = await prisma.intervalEvent.findFirst({
-		where: {
-			userId,
-			moduleType: input.moduleType,
-			eventType: "ACTION",
-			timestamp: { gte: new Date(now.getTime() - 2000) },
-		},
-	});
-	if (recentEvent) {
-		throw new Error("Duplicate action within 2 seconds");
+	const actionKind = input.actionKind ?? "CONSUME_OR_OPEN";
+
+	if (actionKind === "CONSUME_OR_OPEN") {
+		const recentEvent = await prisma.intervalEvent.findFirst({
+			where: {
+				userId,
+				moduleType: input.moduleType,
+				eventType: "ACTION",
+				actionKind: "CONSUME_OR_OPEN",
+				timestamp: { gte: new Date(now.getTime() - 2000) },
+			},
+		});
+		if (recentEvent) {
+			throw new Error("Duplicate action within 2 seconds");
+		}
+	}
+
+	if (actionKind === "SESSION_END" && isSessionModule(input.moduleType)) {
+		const events = await getEventsForUser(userId, [input.moduleType]);
+		const sessionStarts = events
+			.filter((e) => e.actionKind === "SESSION_START")
+			.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+		const lastStart = sessionStarts[0];
+		if (lastStart) {
+			const sessionEndsAfter = events.filter(
+				(e) =>
+					e.actionKind === "SESSION_END" && new Date(e.timestamp) > new Date(lastStart.timestamp),
+			);
+			if (sessionEndsAfter.length === 0) {
+				const startTime = new Date(lastStart.timestamp);
+				const actualMinutes = getElapsedMinutes(startTime, now);
+				if (!input.payload) {
+					input.payload = {};
+				}
+				if (!input.payload.actualMinutes) {
+					input.payload.actualMinutes = actualMinutes;
+				}
+				if (!input.payload.endReason) {
+					input.payload.endReason = "USER_END";
+				}
+			}
+		}
 	}
 
 	const created = await prisma.intervalEvent.create({
@@ -176,8 +236,11 @@ export async function createActionEvent(
 			eventType: "ACTION",
 			timestamp: now,
 			localDayKey,
-			actionKind: input.actionKind ?? "CONSUME_OR_OPEN",
+			actionKind,
 			reasonLabel: input.reasonLabel,
+			payload: input.payload as Parameters<
+				typeof prisma.intervalEvent.create
+			>[0]["data"]["payload"],
 		},
 	});
 
@@ -190,6 +253,7 @@ export async function createActionEvent(
 		localDayKey: created.localDayKey,
 		actionKind: (created.actionKind ?? "CONSUME_OR_OPEN") as IntervalEvent["actionKind"],
 		reasonLabel: created.reasonLabel as IntervalEvent["reasonLabel"],
+		payload: (created.payload as Record<string, unknown>) ?? undefined,
 	};
 
 	const summary = await getEngineTodaySummary(userId, now);
@@ -319,6 +383,7 @@ export async function updateModuleSettings(
 			moduleType: ModuleType;
 			enabled?: boolean;
 			targetIntervalMin?: number;
+			config?: ModuleConfig;
 		}>;
 	},
 ) {
@@ -331,6 +396,13 @@ export async function updateModuleSettings(
 
 	if (input.modules) {
 		for (const mod of input.modules) {
+			const existing = await prisma.userModuleSetting.findUnique({
+				where: { userId_moduleType: { userId, moduleType: mod.moduleType } },
+			});
+
+			const existingConfig = parseModuleConfig(existing?.configJson);
+			const mergedConfig = mod.config ? { ...existingConfig, ...mod.config } : existingConfig;
+
 			await prisma.userModuleSetting.upsert({
 				where: {
 					userId_moduleType: { userId, moduleType: mod.moduleType },
@@ -338,6 +410,7 @@ export async function updateModuleSettings(
 				update: {
 					...(mod.enabled !== undefined && { enabled: mod.enabled }),
 					...(mod.targetIntervalMin !== undefined && { targetIntervalMin: mod.targetIntervalMin }),
+					...(mod.config && { configJson: mergedConfig }),
 				},
 				create: {
 					userId,
@@ -347,6 +420,7 @@ export async function updateModuleSettings(
 						mod.targetIntervalMin ??
 						DEFAULT_MODULE_SETTINGS[mod.moduleType]?.targetIntervalMin ??
 						60,
+					configJson: mergedConfig ?? DEFAULT_MODULE_CONFIG[mod.moduleType],
 				},
 			});
 		}

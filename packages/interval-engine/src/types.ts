@@ -66,6 +66,9 @@ export const ModuleStatus = {
 	COUNTDOWN: "COUNTDOWN",
 	READY: "READY",
 	GAP_DETECTED: "GAP_DETECTED",
+	FOCUS_IDLE: "FOCUS_IDLE",
+	FOCUS_RUNNING: "FOCUS_RUNNING",
+	FOCUS_COACHING: "FOCUS_COACHING",
 } as const;
 export type ModuleStatus = (typeof ModuleStatus)[keyof typeof ModuleStatus];
 export const ModuleStatusSchema = z.enum([
@@ -75,6 +78,9 @@ export const ModuleStatusSchema = z.enum([
 	"COUNTDOWN",
 	"READY",
 	"GAP_DETECTED",
+	"FOCUS_IDLE",
+	"FOCUS_RUNNING",
+	"FOCUS_COACHING",
 ]);
 
 export const AdjustmentKind = {
@@ -88,9 +94,38 @@ export const CtaKey = {
 	LOG_ACTION: "LOG_ACTION",
 	URGE: "URGE",
 	RECOVER: "RECOVER",
+	START_SESSION: "START_SESSION",
+	END_SESSION: "END_SESSION",
+	URGE_INTERRUPT: "URGE_INTERRUPT",
 } as const;
 export type CtaKey = (typeof CtaKey)[keyof typeof CtaKey];
-export const CtaKeySchema = z.enum(["LOG_ACTION", "URGE", "RECOVER"]);
+export const CtaKeySchema = z.enum([
+	"LOG_ACTION",
+	"URGE",
+	"RECOVER",
+	"START_SESSION",
+	"END_SESSION",
+	"URGE_INTERRUPT",
+]);
+
+export const SessionEndReason = {
+	USER_END: "USER_END",
+	URGE: "URGE",
+	AUTO: "AUTO",
+} as const;
+export type SessionEndReason = (typeof SessionEndReason)[keyof typeof SessionEndReason];
+export const SessionEndReasonSchema = z.enum(["USER_END", "URGE", "AUTO"]);
+
+export const SessionStartPayloadSchema = z.object({
+	plannedMinutes: z.number().int().positive(),
+});
+export type SessionStartPayload = z.infer<typeof SessionStartPayloadSchema>;
+
+export const SessionEndPayloadSchema = z.object({
+	actualMinutes: z.number().int().min(0),
+	endReason: SessionEndReasonSchema,
+});
+export type SessionEndPayload = z.infer<typeof SessionEndPayloadSchema>;
 
 export const IntervalEventSchema = z.object({
 	id: z.string().uuid(),
@@ -113,6 +148,15 @@ export const CtaPrimarySchema = z.object({
 });
 export type CtaPrimary = z.infer<typeof CtaPrimarySchema>;
 
+export const FocusSessionInfoSchema = z.object({
+	sessionStartTime: z.string().datetime(),
+	plannedMinutes: z.number().int().positive(),
+	elapsedMinutes: z.number().int().min(0),
+	remainingMinutes: z.number().int(),
+	extendedMinutes: z.number().int().min(0),
+});
+export type FocusSessionInfo = z.infer<typeof FocusSessionInfoSchema>;
+
 export const ModuleStateSchema = z.object({
 	moduleType: ModuleTypeSchema,
 	status: ModuleStatusSchema,
@@ -125,6 +169,11 @@ export const ModuleStateSchema = z.object({
 	todayLostMin: z.number().int().default(0),
 	todayNetMin: z.number().int().default(0),
 	ctaPrimary: CtaPrimarySchema,
+	focusSession: FocusSessionInfoSchema.optional(),
+	todayActionCount: z.number().int().default(0),
+	todayFocusTotalMin: z.number().int().default(0),
+	dailyGoalCount: z.number().int().optional(),
+	defaultSessionMin: z.number().int().optional(),
 });
 export type ModuleState = z.infer<typeof ModuleStateSchema>;
 
@@ -137,10 +186,18 @@ export const IntegratedSummarySchema = z.object({
 });
 export type IntegratedSummary = z.infer<typeof IntegratedSummarySchema>;
 
+export const FloatingSuggestionSchema = z.object({
+	moduleType: ModuleTypeSchema,
+	remainingMin: z.number().int(),
+	options: z.array(z.union([z.literal(1), z.literal(3)])),
+});
+export type FloatingSuggestion = z.infer<typeof FloatingSuggestionSchema>;
+
 export const TodaySummarySchema = z.object({
 	dayKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 	integrated: IntegratedSummarySchema,
 	modules: z.array(ModuleStateSchema),
+	floatingSuggestion: FloatingSuggestionSchema.optional(),
 });
 export type TodaySummary = z.infer<typeof TodaySummarySchema>;
 
@@ -150,6 +207,9 @@ export const WeeklyModuleReportSchema = z.object({
 	lostMin: z.number().int().default(0),
 	netMin: z.number().int().default(0),
 	avgIntervalMin: z.number().optional(),
+	actionCount: z.number().int().default(0),
+	focusTotalMin: z.number().int().default(0),
+	avgSessionMin: z.number().optional(),
 });
 export type WeeklyModuleReport = z.infer<typeof WeeklyModuleReportSchema>;
 
@@ -164,10 +224,17 @@ export const WeeklyReportSchema = z.object({
 });
 export type WeeklyReport = z.infer<typeof WeeklyReportSchema>;
 
+export const ModuleConfigSchema = z.object({
+	dailyGoalCount: z.number().int().positive().optional(),
+	defaultSessionMin: z.number().int().positive().optional(),
+});
+export type ModuleConfig = z.infer<typeof ModuleConfigSchema>;
+
 export const ModuleSettingSchema = z.object({
 	moduleType: ModuleTypeSchema,
 	enabled: z.boolean(),
 	targetIntervalMin: z.number().int().positive(),
+	config: ModuleConfigSchema.optional(),
 });
 export type ModuleSetting = z.infer<typeof ModuleSettingSchema>;
 
@@ -176,3 +243,14 @@ export const UserEngineSettingsSchema = z.object({
 	modules: z.array(ModuleSettingSchema),
 });
 export type UserEngineSettings = z.infer<typeof UserEngineSettingsSchema>;
+
+export const INTERVAL_MODULES: ModuleType[] = ["SMOKE", "SNS", "CAFFEINE"];
+export const SESSION_MODULES: ModuleType[] = ["FOCUS"];
+
+export function isIntervalModule(moduleType: ModuleType): boolean {
+	return INTERVAL_MODULES.includes(moduleType);
+}
+
+export function isSessionModule(moduleType: ModuleType): boolean {
+	return SESSION_MODULES.includes(moduleType);
+}

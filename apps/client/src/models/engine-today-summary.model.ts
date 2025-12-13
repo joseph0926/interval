@@ -2,8 +2,16 @@ import { defineModel } from "@firsttx/local-first";
 import { z } from "zod";
 
 const ctaPrimarySchema = z.object({
-	key: z.enum(["LOG_ACTION", "URGE", "RECOVER"]),
+	key: z.enum(["LOG_ACTION", "URGE", "RECOVER", "START_SESSION", "END_SESSION", "URGE_INTERRUPT"]),
 	enabled: z.boolean(),
+});
+
+const focusSessionInfoSchema = z.object({
+	sessionStartTime: z.string(),
+	plannedMinutes: z.number(),
+	elapsedMinutes: z.number(),
+	remainingMinutes: z.number(),
+	extendedMinutes: z.number(),
 });
 
 const moduleStateSchema = z.object({
@@ -15,6 +23,9 @@ const moduleStateSchema = z.object({
 		"COUNTDOWN",
 		"READY",
 		"GAP_DETECTED",
+		"FOCUS_IDLE",
+		"FOCUS_RUNNING",
+		"FOCUS_COACHING",
 	]),
 	lastActionTime: z.string().optional(),
 	targetIntervalMin: z.number().optional(),
@@ -25,6 +36,11 @@ const moduleStateSchema = z.object({
 	todayLostMin: z.number(),
 	todayNetMin: z.number(),
 	ctaPrimary: ctaPrimarySchema,
+	focusSession: focusSessionInfoSchema.optional(),
+	todayActionCount: z.number(),
+	todayFocusTotalMin: z.number(),
+	dailyGoalCount: z.number().optional(),
+	defaultSessionMin: z.number().optional(),
 });
 
 const integratedSummarySchema = z.object({
@@ -35,10 +51,17 @@ const integratedSummarySchema = z.object({
 	nextLevelRemainingMin: z.number().optional(),
 });
 
+const floatingSuggestionSchema = z.object({
+	moduleType: z.enum(["SMOKE", "SNS", "CAFFEINE", "FOCUS"]),
+	remainingMin: z.number(),
+	options: z.array(z.union([z.literal(1), z.literal(3)])),
+});
+
 const engineTodaySummarySchema = z.object({
 	dayKey: z.string(),
 	integrated: integratedSummarySchema,
 	modules: z.array(moduleStateSchema),
+	floatingSuggestion: floatingSuggestionSchema.optional(),
 });
 
 export const EngineTodaySummaryModel = defineModel("engineTodaySummary", {

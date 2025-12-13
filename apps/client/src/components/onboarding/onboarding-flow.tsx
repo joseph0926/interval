@@ -1,23 +1,27 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { WelcomeStep } from "./steps/welcome-step";
+import { ModuleSelectStep } from "./steps/module-select-step";
 import { SmokingAmountStep } from "./steps/smoking-amount-step";
 import { TargetIntervalStep } from "./steps/target-interval-step";
 import { MotivationStep } from "./steps/motivation-step";
 import { StepIndicator } from "./step-indicator";
 import { api } from "@/lib/api";
 import type { OnboardingData, OnboardingStep, DailySmokingRange } from "@/types/onboarding.type";
+import type { EngineModuleType } from "@/lib/api-types";
 
-const STEPS: OnboardingStep[] = ["welcome", "smoking-amount", "target-interval", "motivation"];
+interface OnboardingDataExtended extends OnboardingData {
+	selectedModules: EngineModuleType[];
+}
 
 export function OnboardingFlow() {
 	const navigate = useNavigate();
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
 	const [isPending, setIsPending] = useState(false);
 	const [error, setError] = useState<string>();
-	const [data, setData] = useState<OnboardingData>({
+	const [data, setData] = useState<OnboardingDataExtended>({
 		jobType: null,
 		enabledModules: ["SMOKING"],
 		dailySmokingRange: null,
@@ -25,15 +29,25 @@ export function OnboardingFlow() {
 		motivation: "",
 		dayStartTime: "04:00",
 		nickname: "",
+		selectedModules: [],
 	});
 
-	const stepIndex = STEPS.indexOf(currentStep);
+	const steps = useMemo<OnboardingStep[]>(() => {
+		const base: OnboardingStep[] = ["welcome", "module-select"];
+		if (data.selectedModules.includes("SMOKE")) {
+			base.push("smoking-amount", "target-interval");
+		}
+		base.push("motivation");
+		return base;
+	}, [data.selectedModules]);
+
+	const stepIndex = steps.indexOf(currentStep);
 	const isFirstStep = stepIndex === 0;
-	const isLastStep = stepIndex === STEPS.length - 1;
+	const isLastStep = stepIndex === steps.length - 1;
 
 	const goNext = async () => {
 		if (!isLastStep) {
-			setCurrentStep(STEPS[stepIndex + 1]);
+			setCurrentStep(steps[stepIndex + 1]);
 		}
 	};
 
@@ -56,25 +70,41 @@ export function OnboardingFlow() {
 
 	const goPrev = () => {
 		if (!isFirstStep) {
-			setCurrentStep(STEPS[stepIndex - 1]);
+			setCurrentStep(steps[stepIndex - 1]);
 		}
 	};
 
-	const updateData = (partial: Partial<OnboardingData>) => {
+	const updateData = (partial: Partial<OnboardingDataExtended>) => {
 		setData((prev) => ({ ...prev, ...partial }));
 	};
 
 	const handleSubmit = async () => {
-		if (!data.dailySmokingRange) return;
+		if (data.selectedModules.length === 0) return;
 
 		setIsPending(true);
 		setError(undefined);
 
 		try {
+			const modules = data.selectedModules.map((moduleType) => ({
+				moduleType,
+				enabled: true,
+				targetIntervalMin:
+					moduleType === "SMOKE"
+						? data.targetInterval
+						: moduleType === "SNS"
+							? 30
+							: moduleType === "CAFFEINE"
+								? 180
+								: 10,
+			}));
+
 			const res = await api.onboarding.complete({
-				dailySmokingRange: data.dailySmokingRange,
-				targetInterval: data.targetInterval,
+				dailySmokingRange: data.selectedModules.includes("SMOKE")
+					? (data.dailySmokingRange ?? undefined)
+					: undefined,
+				targetInterval: data.selectedModules.includes("SMOKE") ? data.targetInterval : undefined,
 				motivation: data.motivation || undefined,
+				modules,
 			});
 
 			if (!res.success) {
@@ -90,17 +120,29 @@ export function OnboardingFlow() {
 		}
 	};
 
+	const progressStepIndex = stepIndex > 0 ? stepIndex - 1 : 0;
+	const progressTotal = steps.length - 1;
+
 	return (
 		<div className="flex min-h-dvh flex-col">
 			{currentStep !== "welcome" && (
 				<div className="px-6 pt-6">
-					<StepIndicator current={stepIndex - 1} total={STEPS.length - 1} />
+					<StepIndicator current={progressStepIndex} total={progressTotal} />
 				</div>
 			)}
 			<div className="flex flex-1 flex-col">
 				<AnimatePresence mode="wait">
 					{currentStep === "welcome" && (
 						<WelcomeStep key="welcome" onNext={handleStart} isPending={isPending} />
+					)}
+					{currentStep === "module-select" && (
+						<ModuleSelectStep
+							key="module-select"
+							value={data.selectedModules}
+							onChange={(value: EngineModuleType[]) => updateData({ selectedModules: value })}
+							onNext={goNext}
+							onPrev={goPrev}
+						/>
 					)}
 					{currentStep === "smoking-amount" && (
 						<SmokingAmountStep

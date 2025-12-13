@@ -22,17 +22,38 @@ export type EngineModuleStatus =
 	| "NO_BASELINE"
 	| "COUNTDOWN"
 	| "READY"
-	| "GAP_DETECTED";
+	| "GAP_DETECTED"
+	| "FOCUS_IDLE"
+	| "FOCUS_RUNNING"
+	| "FOCUS_COACHING";
 
 export type EngineReasonLabel = "BREAK" | "BORED" | "STRESS" | "HABIT" | "AVOID" | "LINK" | "OTHER";
 
 export type EngineTriggerContext = "EARLY_URGE" | "FLOATING_CARD" | "FOCUS_EXTEND" | "MANUAL";
 
-export type EngineCtaKey = "LOG_ACTION" | "URGE" | "RECOVER";
+export type EngineCtaKey =
+	| "LOG_ACTION"
+	| "URGE"
+	| "RECOVER"
+	| "START_SESSION"
+	| "END_SESSION"
+	| "URGE_INTERRUPT";
+
+export type EngineActionKind = "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+
+export type EngineSessionEndReason = "USER_END" | "URGE" | "AUTO";
 
 export interface EngineCtaPrimary {
 	key: EngineCtaKey;
 	enabled: boolean;
+}
+
+export interface EngineFocusSessionInfo {
+	sessionStartTime: string;
+	plannedMinutes: number;
+	elapsedMinutes: number;
+	remainingMinutes: number;
+	extendedMinutes: number;
 }
 
 export interface EngineModuleState {
@@ -47,6 +68,11 @@ export interface EngineModuleState {
 	todayLostMin: number;
 	todayNetMin: number;
 	ctaPrimary: EngineCtaPrimary;
+	focusSession?: EngineFocusSessionInfo;
+	todayActionCount: number;
+	todayFocusTotalMin: number;
+	dailyGoalCount?: number;
+	defaultSessionMin?: number;
 }
 
 export interface EngineIntegratedSummary {
@@ -57,10 +83,17 @@ export interface EngineIntegratedSummary {
 	nextLevelRemainingMin?: number;
 }
 
+export interface EngineFloatingSuggestion {
+	moduleType: EngineModuleType;
+	remainingMin: number;
+	options: (1 | 3)[];
+}
+
 export interface EngineTodaySummary {
 	dayKey: string;
 	integrated: EngineIntegratedSummary;
 	modules: EngineModuleState[];
+	floatingSuggestion?: EngineFloatingSuggestion;
 }
 
 export interface EngineIntervalEvent {
@@ -70,17 +103,23 @@ export interface EngineIntervalEvent {
 	eventType: "ACTION" | "DELAY" | "ADJUSTMENT";
 	timestamp: string;
 	localDayKey: string;
-	actionKind?: "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+	actionKind?: EngineActionKind;
 	delayMinutes?: number;
 	reasonLabel?: EngineReasonLabel;
 	triggerContext?: EngineTriggerContext;
 	payload?: Record<string, unknown>;
 }
 
+export interface EngineModuleConfig {
+	dailyGoalCount?: number;
+	defaultSessionMin?: number;
+}
+
 export interface EngineModuleSetting {
 	moduleType: EngineModuleType;
 	enabled: boolean;
 	targetIntervalMin: number;
+	config?: EngineModuleConfig;
 }
 
 export interface EngineSettings {
@@ -94,6 +133,9 @@ export interface EngineWeeklyModuleReport {
 	lostMin: number;
 	netMin: number;
 	avgIntervalMin?: number;
+	actionCount: number;
+	focusTotalMin: number;
+	avgSessionMin?: number;
 }
 
 export interface EngineWeeklyReport {

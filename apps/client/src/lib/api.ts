@@ -135,11 +135,20 @@ export const api = {
 
 	onboarding: {
 		complete: async (data: {
-			dailySmokingRange: DailySmokingRange;
-			targetInterval: number;
+			dailySmokingRange?: DailySmokingRange;
+			targetInterval?: number;
 			motivation?: string;
 			dayStartTime?: string;
 			nickname?: string;
+			modules?: Array<{
+				moduleType: EngineModuleType;
+				enabled?: boolean;
+				targetIntervalMin?: number;
+				config?: {
+					dailyGoalCount?: number;
+					defaultSessionMin?: number;
+				};
+			}>;
 		}) => {
 			const res = await client.post<{ success: boolean; user: User }>(
 				"/api/onboarding/complete",
@@ -171,6 +180,10 @@ export const api = {
 			timestamp?: string;
 			reasonLabel?: EngineReasonLabel;
 			actionKind?: "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+			payload?: {
+				plannedMinutes?: number;
+				endReason?: "USER_END" | "URGE" | "AUTO";
+			};
 		}) => {
 			const res = await client.post<{
 				success: boolean;

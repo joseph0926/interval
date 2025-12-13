@@ -87,6 +87,7 @@ model UserModuleSetting {
   moduleType        String
   enabled           Boolean  @default(true)
   targetIntervalMin Int      @default(60)
+  configJson        Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
