@@ -9,9 +9,6 @@ ENV NODE_ENV="production"
 
 RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
 
-
-
-
 FROM base AS build
 
 ENV NODE_ENV="development"
@@ -44,9 +41,6 @@ RUN pnpm --filter @interval/server build
 
 RUN pnpm --filter @interval/server deploy --prod --legacy /app/deploy
 
-
-
-
 FROM base AS production
 
 RUN apt-get update -qq && \
@@ -56,10 +50,9 @@ RUN apt-get update -qq && \
 
 RUN useradd --create-home --shell /bin/bash appuser
 
-COPY --from=build /app/deploy ./
-
-COPY --from=build /app/apps/server/dist ./dist
-COPY --from=build /app/apps/server/prisma ./prisma
+COPY --from=build --chown=appuser:appuser /app/deploy ./
+COPY --from=build --chown=appuser:appuser /app/apps/server/dist ./dist
+COPY --from=build --chown=appuser:appuser /app/apps/server/prisma ./prisma
 
 USER appuser
 
