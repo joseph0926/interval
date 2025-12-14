@@ -58,7 +58,9 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 COPY --from=build /app/deploy ./
 
+COPY --from=build /app/apps/server/dist ./dist
 COPY --from=build /app/apps/server/prisma ./prisma
+COPY --from=build /app/apps/server/src/generated ./generated
 
 USER appuser
 
