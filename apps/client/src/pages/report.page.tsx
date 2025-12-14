@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ReportContent } from "@/components/report/report-content";
+import { SimpleReportContent } from "@/components/report/simple-report-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { transformReportData } from "@/lib/report-utils";
@@ -79,5 +79,5 @@ export function ReportPage() {
 		return <ReportSkeleton />;
 	}
 
-	return <ReportContent data={data} engineReport={engineReport ?? undefined} />;
+	return <SimpleReportContent data={data} engineReport={engineReport ?? undefined} />;
 }

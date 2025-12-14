@@ -7,6 +7,8 @@ import { ModuleSelectStep } from "./steps/module-select-step";
 import { SmokingAmountStep } from "./steps/smoking-amount-step";
 import { ModuleIntervalStep, getDefaultInterval } from "./steps/module-interval-step";
 import { MotivationStep } from "./steps/motivation-step";
+import { FirstWinStep } from "./steps/first-win-step";
+import { IfThenStep } from "./steps/if-then-step";
 import { StepIndicator } from "./step-indicator";
 import { api } from "@/lib/api";
 import type { DailySmokingRange } from "@/types/onboarding.type";
@@ -14,9 +16,11 @@ import type { EngineModuleType } from "@/lib/api-types";
 
 type OnboardingStep =
 	| "welcome"
+	| "first-win"
 	| "module-select"
 	| "smoking-amount"
 	| `interval-${EngineModuleType}`
+	| "if-then"
 	| "motivation";
 
 interface ModuleIntervalData {
@@ -26,11 +30,17 @@ interface ModuleIntervalData {
 	FOCUS: number;
 }
 
+interface IfThenPlan {
+	trigger: string;
+	action: string;
+}
+
 interface OnboardingDataState {
 	selectedModules: EngineModuleType[];
 	dailySmokingRange: DailySmokingRange | null;
 	moduleIntervals: ModuleIntervalData;
 	motivation: string;
+	ifThenPlan: IfThenPlan | null;
 }
 
 export function OnboardingFlow() {
@@ -48,10 +58,11 @@ export function OnboardingFlow() {
 			FOCUS: 25,
 		},
 		motivation: "",
+		ifThenPlan: null,
 	});
 
 	const steps = useMemo<OnboardingStep[]>(() => {
-		const result: OnboardingStep[] = ["welcome", "module-select"];
+		const result: OnboardingStep[] = ["welcome", "first-win", "module-select"];
 
 		if (data.selectedModules.includes("SMOKE")) {
 			result.push("smoking-amount");
@@ -61,6 +72,7 @@ export function OnboardingFlow() {
 			result.push(`interval-${moduleType}` as OnboardingStep);
 		}
 
+		result.push("if-then");
 		result.push("motivation");
 		return result;
 	}, [data.selectedModules]);
@@ -175,9 +187,11 @@ export function OnboardingFlow() {
 		/>
 	);
 
+	const showStepIndicator = currentStep !== "welcome" && currentStep !== "first-win";
+
 	return (
 		<div className="flex min-h-dvh flex-col">
-			{currentStep !== "welcome" && (
+			{showStepIndicator && (
 				<div className="px-6 pt-6">
 					<StepIndicator current={progressStepIndex} total={progressTotal} />
 				</div>
@@ -186,6 +200,9 @@ export function OnboardingFlow() {
 				<AnimatePresence mode="wait">
 					{currentStep === "welcome" && (
 						<WelcomeStep key="welcome" onNext={handleStart} isPending={isPending} />
+					)}
+					{currentStep === "first-win" && (
+						<FirstWinStep key="first-win" onNext={goNext} onPrev={goPrev} />
 					)}
 					{currentStep === "module-select" && (
 						<ModuleSelectStep
@@ -211,6 +228,15 @@ export function OnboardingFlow() {
 					{currentStep === "interval-SNS" && renderIntervalStep("SNS")}
 					{currentStep === "interval-CAFFEINE" && renderIntervalStep("CAFFEINE")}
 					{currentStep === "interval-FOCUS" && renderIntervalStep("FOCUS")}
+					{currentStep === "if-then" && (
+						<IfThenStep
+							key="if-then"
+							value={data.ifThenPlan}
+							onChange={(value) => setData((prev) => ({ ...prev, ifThenPlan: value }))}
+							onNext={goNext}
+							onPrev={goPrev}
+						/>
+					)}
 					{currentStep === "motivation" && (
 						<MotivationStep
 							key="motivation"

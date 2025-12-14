@@ -41,11 +41,34 @@
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
+
+	--color-surface: var(--surface);
+	--color-surface-elevated: var(--surface-elevated);
+	--color-surface-glass: var(--surface-glass);
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-text-tertiary: var(--text-tertiary);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
+	--color-success-muted: var(--success-muted);
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
+	--color-warning-muted: var(--warning-muted);
+	--color-danger: var(--danger);
+	--color-danger-foreground: var(--danger-foreground);
+	--color-danger-muted: var(--danger-muted);
+	--color-earned: var(--earned);
+	--color-earned-foreground: var(--earned-foreground);
+	--color-lost: var(--lost);
+	--color-lost-foreground: var(--lost-foreground);
+	--color-focus: var(--focus);
+	--color-focus-foreground: var(--focus-foreground);
+	--color-celebration: var(--celebration);
 }
 
 :root {
 	--radius: 0.65rem;
-	--background: oklch(1 0 0);
+	--background: oklch(0.985 0 0);
 	--foreground: oklch(0.141 0.005 285.823);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.141 0.005 285.823);
@@ -76,22 +99,50 @@
 	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
 	--sidebar-border: oklch(0.92 0.004 286.32);
 	--sidebar-ring: oklch(0.841 0.238 128.85);
+
+	--surface: oklch(1 0 0);
+	--surface-elevated: oklch(0.99 0 0);
+	--surface-glass: oklch(1 0 0 / 80%);
+	--text-primary: oklch(0.141 0.005 285.823);
+	--text-secondary: oklch(0.4 0.01 285.823);
+	--text-tertiary: oklch(0.552 0.016 285.938);
+	--success: oklch(0.648 0.2 131.684);
+	--success-foreground: oklch(0.986 0.031 120.757);
+	--success-muted: oklch(0.648 0.2 131.684 / 15%);
+	--warning: oklch(0.769 0.188 70.08);
+	--warning-foreground: oklch(0.421 0.095 57.708);
+	--warning-muted: oklch(0.769 0.188 70.08 / 15%);
+	--danger: oklch(0.577 0.245 27.325);
+	--danger-foreground: oklch(0.986 0.031 27.325);
+	--danger-muted: oklch(0.577 0.245 27.325 / 15%);
+	--earned: oklch(0.648 0.2 131.684);
+	--earned-foreground: oklch(0.45 0.15 131.684);
+	--lost: oklch(0.637 0.237 25.331);
+	--lost-foreground: oklch(0.5 0.2 25.331);
+	--focus: oklch(0.627 0.265 303.9);
+	--focus-foreground: oklch(0.986 0.031 303.9);
+	--celebration: oklch(0.769 0.188 70.08);
+
+	--glass-blur: 12px;
+	--transition-fast: 150ms;
+	--transition-normal: 250ms;
+	--transition-slow: 400ms;
 }
 
 .dark {
-	--background: oklch(0.141 0.005 285.823);
+	--background: oklch(0.12 0.005 285.823);
 	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.21 0.006 285.885);
+	--card: oklch(0.18 0.006 285.885);
 	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.21 0.006 285.885);
+	--popover: oklch(0.18 0.006 285.885);
 	--popover-foreground: oklch(0.985 0 0);
 	--primary: oklch(0.648 0.2 131.684);
 	--primary-foreground: oklch(0.986 0.031 120.757);
-	--secondary: oklch(0.274 0.006 286.033);
+	--secondary: oklch(0.24 0.006 286.033);
 	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.274 0.006 286.033);
+	--muted: oklch(0.24 0.006 286.033);
 	--muted-foreground: oklch(0.705 0.015 286.067);
-	--accent: oklch(0.274 0.006 286.033);
+	--accent: oklch(0.24 0.006 286.033);
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);
@@ -102,14 +153,37 @@
 	--chart-3: oklch(0.627 0.194 149.214);
 	--chart-4: oklch(0.527 0.154 150.069);
 	--chart-5: oklch(0.448 0.119 151.328);
-	--sidebar: oklch(0.21 0.006 285.885);
+	--sidebar: oklch(0.18 0.006 285.885);
 	--sidebar-foreground: oklch(0.985 0 0);
 	--sidebar-primary: oklch(0.768 0.233 130.85);
 	--sidebar-primary-foreground: oklch(0.986 0.031 120.757);
-	--sidebar-accent: oklch(0.274 0.006 286.033);
+	--sidebar-accent: oklch(0.24 0.006 286.033);
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.405 0.101 131.063);
+
+	--surface: oklch(0.18 0.006 285.885);
+	--surface-elevated: oklch(0.22 0.006 285.885);
+	--surface-glass: oklch(0.18 0.006 285.885 / 80%);
+	--text-primary: oklch(0.985 0 0);
+	--text-secondary: oklch(0.75 0.01 285.823);
+	--text-tertiary: oklch(0.6 0.015 286.067);
+	--success: oklch(0.72 0.2 131.684);
+	--success-foreground: oklch(0.141 0.005 131.684);
+	--success-muted: oklch(0.648 0.2 131.684 / 20%);
+	--warning: oklch(0.82 0.165 70.08);
+	--warning-foreground: oklch(0.141 0.005 70.08);
+	--warning-muted: oklch(0.769 0.188 70.08 / 20%);
+	--danger: oklch(0.704 0.191 22.216);
+	--danger-foreground: oklch(0.986 0.031 22.216);
+	--danger-muted: oklch(0.704 0.191 22.216 / 20%);
+	--earned: oklch(0.72 0.2 131.684);
+	--earned-foreground: oklch(0.72 0.2 131.684);
+	--lost: oklch(0.704 0.191 22.216);
+	--lost-foreground: oklch(0.704 0.191 22.216);
+	--focus: oklch(0.72 0.25 303.9);
+	--focus-foreground: oklch(0.986 0.031 303.9);
+	--celebration: oklch(0.82 0.165 70.08);
 }
 
 @layer base {
@@ -117,6 +191,55 @@
 		@apply border-border outline-ring/50;
 	}
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground antialiased;
+	}
+}
+
+@layer utilities {
+	.surface-glass {
+		background: var(--surface-glass);
+		backdrop-filter: blur(var(--glass-blur));
+		-webkit-backdrop-filter: blur(var(--glass-blur));
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		.surface-glass {
+			background: var(--surface);
+			backdrop-filter: none;
+			-webkit-backdrop-filter: none;
+		}
+	}
+
+	.text-earned {
+		color: var(--earned-foreground);
+	}
+
+	.text-lost {
+		color: var(--lost-foreground);
+	}
+
+	.text-balance {
+		text-wrap: balance;
+	}
+
+	.motion-safe {
+		@media (prefers-reduced-motion: no-preference) {
+			transition-duration: var(--transition-normal);
+		}
+	}
+
+	.motion-reduce {
+		@media (prefers-reduced-motion: reduce) {
+			transition-duration: 0ms;
+			animation-duration: 0ms;
+		}
+	}
+
+	.celebration-glow {
+		box-shadow: 0 0 20px oklch(0.769 0.188 70.08 / 40%);
+	}
+
+	.tabular-nums {
+		font-variant-numeric: tabular-nums;
 	}
 }
