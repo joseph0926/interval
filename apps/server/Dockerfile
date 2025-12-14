@@ -42,7 +42,7 @@ COPY apps/server ./apps/server/
 RUN pnpm --filter @interval/engine build
 RUN pnpm --filter @interval/server build
 
-RUN pnpm --filter @interval/server deploy --prod /app/deploy
+RUN pnpm --filter @interval/server deploy --prod --legacy /app/deploy
 
 
 
