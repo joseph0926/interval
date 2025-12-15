@@ -9,7 +9,10 @@ interface WelcomeStepProps {
 export function WelcomeStep({ onNext, isPending }: WelcomeStepProps) {
 	return (
 		<StepTransition>
-			<div className="flex flex-1 flex-col justify-between px-6 py-12">
+			<div
+				className="flex flex-1 flex-col justify-between px-6 pt-12"
+				style={{ paddingBottom: "calc(3rem + env(safe-area-inset-bottom, 0px))" }}
+			>
 				<div className="flex flex-1 flex-col items-center justify-center text-center">
 					<h1 className="text-4xl font-bold tracking-tight">간격</h1>
 					<p className="mt-4 text-lg text-muted-foreground">지금 말고, 조금 있다가.</p>
