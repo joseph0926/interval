@@ -54,6 +54,11 @@ export function createInjectedScript(params: {
 			window.addEventListener('nativeMessage', function(e) {
 				console.log('Message from native:', e.detail);
 			});
+			window.addEventListener("load", function () {
+				try {
+					window.ReactNativeWebView && window.ReactNativeWebView.postMessage("WEB_READY");
+				} catch (e) {}
+			});
 
 			true;
 		})();

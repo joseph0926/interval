@@ -50,7 +50,6 @@ app/
 ├── app/                    # Expo Router (파일 기반 라우팅)
 │   ├── _layout.tsx         # 루트 레이아웃
 │   ├── index.tsx           # 메인 화면 (WebView)
-│   └── onboarding.tsx      # 온보딩 화면
 ├── components/
 │   ├── WebViewScreen.tsx   # WebView 래퍼
 │   └── ErrorBoundary.tsx   # 에러 바운더리
