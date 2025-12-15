@@ -126,12 +126,12 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "timestamp=$(date +'%Y-%m-%d %H:%M:%S KST' -d '+9 hours')" >> $GITHUB_OUTPUT
 
-      - name: Deploy to Fly.io (Blue-Green)
+      - name: Deploy to Fly.io
         run: |
           flyctl deploy \
             --remote-only \
             --config apps/server/fly.toml \
-            --strategy bluegreen
+            --strategy immediate
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
