@@ -1,6 +1,5 @@
-import { useRef, useCallback, useMemo, useEffect, useState } from "react";
+import { useRef, useCallback, useMemo, useState } from "react";
 import { View, ActivityIndicator, Animated, StyleSheet } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,10 +35,6 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 			useNativeDriver: true,
 		}).start(() => setOverlayHidden(true));
 	}, [overlayOpacity]);
-
-	useEffect(() => {
-		SplashScreen.hideAsync().catch(() => {});
-	}, []);
 
 	const injectedJS = useMemo(
 		() =>
@@ -81,7 +76,7 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 	return (
 		<SafeAreaView
 			style={[webViewStyles.container, { backgroundColor: COLORS.background }]}
-			edges={["top"]}
+			edges={["top", "bottom"]}
 		>
 			<View style={{ flex: 1, backgroundColor: COLORS.background }}>
 				<WebView

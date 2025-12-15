@@ -3,7 +3,7 @@
 		"name": "간격",
 		"slug": "interval-app",
 		"description": "지금 당장 말고, 조금 있다가",
-		"version": "1.0.5",
+		"version": "1.1.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "interval",
@@ -69,7 +69,7 @@
 		"extra": {
 			"router": {},
 			"eas": {
-				"projectId": "7d1b3e20-837f-4beb-89c5-a51b1ea8470b"
+				"projectId": "5e308357-44af-4486-a61a-2505c288e18c"
 			}
 		}
 	}
