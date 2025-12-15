@@ -71,7 +71,7 @@ export default function OnboardingScreen() {
 	}, []);
 
 	return (
-		<SafeAreaView style={webViewStyles.container} edges={["top"]}>
+		<SafeAreaView style={webViewStyles.container} edges={["top", "bottom"]}>
 			<WebView
 				ref={webViewRef}
 				source={{ uri }}
