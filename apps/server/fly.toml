@@ -12,7 +12,7 @@ primary_region = "nrt"
   PORT = "3000"
 
 [deploy]
-  strategy = "rolling"
+  strategy = "immediate"
 
 # HTTP service configuration
 [http_service]
