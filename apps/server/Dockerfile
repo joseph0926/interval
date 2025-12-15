@@ -52,6 +52,7 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 COPY --from=build --chown=appuser:appuser /app/deploy ./
 COPY --from=build --chown=appuser:appuser /app/apps/server/dist ./dist
+COPY --from=build --chown=appuser:appuser /app/apps/server/src/generated ./dist/generated
 COPY --from=build --chown=appuser:appuser /app/apps/server/prisma ./prisma
 
 USER appuser
