@@ -4,8 +4,6 @@
 
 > Interval 백엔드 서버
 
-Fastify + Prisma 기반 REST API 서버
-
 ---
 
 ## 소개

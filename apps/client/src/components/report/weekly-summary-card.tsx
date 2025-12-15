@@ -58,7 +58,7 @@ export function WeeklySummaryCard({ summary }: WeeklySummaryCardProps) {
 							<p className="text-2xl font-bold text-primary">{summary.totalDelayMinutes}</p>
 							<span className="text-sm text-primary">분</span>
 						</div>
-						<p className="text-xs text-muted-foreground">벌어낸 거리</p>
+						<p className="text-xs text-muted-foreground">적립 거리</p>
 					</div>
 				</div>
 			</CardContent>

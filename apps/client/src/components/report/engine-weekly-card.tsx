@@ -18,7 +18,7 @@ export function EngineWeeklyCard({ report }: EngineWeeklyCardProps) {
 			<CardContent className="space-y-4">
 				<div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
 					<div>
-						<p className="text-sm text-muted-foreground">총 벌어낸 거리</p>
+						<p className="text-sm text-muted-foreground">총 적립 거리</p>
 						<p className="text-2xl font-bold">
 							{integrated.netMin >= 0 ? "+" : ""}
 							{integrated.netMin}분
@@ -37,7 +37,7 @@ export function EngineWeeklyCard({ report }: EngineWeeklyCardProps) {
 						<p className="text-lg font-semibold text-green-600">+{integrated.earnedMin}분</p>
 					</div>
 					<div className="rounded-lg border p-3">
-						<p className="text-xs text-muted-foreground">잃은 시간</p>
+						<p className="text-xs text-muted-foreground">차감 시간</p>
 						<p className="text-lg font-semibold text-red-500">-{integrated.lostMin}분</p>
 					</div>
 				</div>

@@ -1,19 +1,15 @@
-import { useState, useCallback } from "react";
-import { motion } from "motion/react";
+import { useState, useCallback, useMemo } from "react";
 import { useSyncedModel } from "@firsttx/local-first";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/date";
-import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	ModuleCard,
-	ModuleDrawer,
-	IntegratedSummaryCard,
-	FloatingSuggestionCard,
-} from "@/components/module";
+import { ModuleDrawer, FloatingSuggestionCard } from "@/components/module";
+import { QuickDepositFab, QUICK_DEPOSIT_CHIPS } from "@/components/primitives";
+import { HaloHero } from "./halo-hero";
+import { BentoSummary } from "./bento-summary";
+import { ModuleList } from "./module-list";
 import { EngineTodaySummaryModel } from "@/models/engine-today-summary.model";
-import type { EngineTodaySummary, EngineModuleState } from "@/types/engine.type";
-
+import type { EngineModuleState } from "@/types/engine.type";
 async function fetchEngineTodaySummary() {
 	const json = await api.engine.today();
 	return json.data;
@@ -60,47 +56,79 @@ export function EngineHomeContent() {
 		sync();
 	}, [sync]);
 
+	const enabledModules = useMemo(() => {
+		if (!summary) return [];
+		return summary.modules.filter((m) => m.status !== "DISABLED");
+	}, [summary]);
+
+	const countdownModules = useMemo(() => {
+		return enabledModules.filter((m) => m.status === "COUNTDOWN");
+	}, [enabledModules]);
+
+	const hasCountdown = countdownModules.length > 0;
+
+	const handleQuickDeposit = useCallback(
+		async (minutes: number) => {
+			if (countdownModules.length === 0) return;
+			await Promise.all(
+				countdownModules.map((m) =>
+					api.engine.delay({
+						moduleType: m.moduleType,
+						delayMinutes: minutes as 1 | 3 | 5 | 10,
+						triggerContext: "FLOATING_CARD",
+					}),
+				),
+			);
+			sync();
+		},
+		[countdownModules, sync],
+	);
+
 	if (status === "loading" || !summary) {
 		return <EngineHomeSkeleton />;
 	}
 
-	const enabledModules = summary.modules.filter((m) => m.status !== "DISABLED");
-
 	return (
 		<>
-			<motion.div
-				variants={staggerContainer}
-				initial="hidden"
-				animate="visible"
-				className="flex flex-1 flex-col"
-			>
-				<motion.div variants={staggerItem} className="px-6 pt-12">
-					<EngineHomeHeader summary={summary} />
-				</motion.div>
-
-				<motion.div variants={staggerItem} className="px-6 py-6">
-					<IntegratedSummaryCard integrated={summary.integrated} />
-				</motion.div>
-
+			<div className="relative flex flex-1 flex-col pb-32 overflow-hidden">
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/7 blur-3xl"
+				/>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute top-40 left-6 h-56 w-56 rounded-full bg-focus/7 blur-3xl"
+				/>
+				<header className="px-6 pt-6">
+					<p className="text-xs text-text-tertiary">{formatDate(new Date())}</p>
+					<h1 className="mt-1 text-lg font-semibold tracking-tight text-text-primary">오늘</h1>
+				</header>
+				<section className="px-6 pt-4 pb-2">
+					<HaloHero integrated={summary.integrated} />
+				</section>
+				<section className="px-6 pt-4 pb-4">
+					<BentoSummary integrated={summary.integrated} activeModuleCount={enabledModules.length} />
+				</section>
 				{summary.floatingSuggestion && (
-					<motion.div variants={staggerItem} className="px-6 pb-4">
+					<section className="px-6 pb-4">
 						<FloatingSuggestionCard suggestion={summary.floatingSuggestion} onComplete={sync} />
-					</motion.div>
+					</section>
 				)}
-
-				<div className="flex flex-1 flex-col gap-4 px-6 pb-6">
-					{enabledModules.map((moduleState, idx) => (
-						<motion.div key={moduleState.moduleType} variants={staggerItem} custom={idx}>
-							<ModuleCard
-								moduleState={moduleState}
-								onAction={() => handleAction(moduleState)}
-								onUrge={() => handleUrge(moduleState)}
-							/>
-						</motion.div>
-					))}
-				</div>
-			</motion.div>
-
+				<section className="flex-1 px-6 pb-6">
+					<h2 className="mb-3 text-sm font-medium text-text-secondary">모듈</h2>
+					<ModuleList
+						modules={enabledModules}
+						onModuleAction={handleAction}
+						onModuleUrge={handleUrge}
+					/>
+				</section>
+			</div>
+			<QuickDepositFab
+				visible={hasCountdown}
+				moduleCount={countdownModules.length}
+				chips={QUICK_DEPOSIT_CHIPS}
+				onDeposit={handleQuickDeposit}
+			/>
 			{drawerState.moduleState && (
 				<ModuleDrawer
 					open={drawerState.open}
@@ -114,31 +142,22 @@ export function EngineHomeContent() {
 	);
 }
 
-function EngineHomeHeader({ summary }: { summary: EngineTodaySummary }) {
-	const today = new Date();
-	const enabledCount = summary.modules.filter((m) => m.status !== "DISABLED").length;
-
-	return (
-		<div>
-			<p className="text-sm text-muted-foreground">{formatDate(today)}</p>
-			<h1 className="mt-1 text-xl font-semibold">{enabledCount}개 모듈로 거리 두기 중</h1>
-		</div>
-	);
-}
-
 function EngineHomeSkeleton() {
 	return (
 		<div className="flex flex-1 flex-col">
-			<div className="px-6 pt-12">
-				<Skeleton className="h-4 w-32" />
-				<Skeleton className="mt-2 h-6 w-64" />
+			<div className="px-6 pt-8 text-center">
+				<Skeleton className="mx-auto h-4 w-24" />
 			</div>
-			<div className="px-6 py-6">
-				<Skeleton className="h-24 w-full rounded-xl" />
+			<div className="flex items-center justify-center py-8">
+				<Skeleton className="size-48 rounded-full" />
 			</div>
-			<div className="flex flex-col gap-4 px-6 pb-6">
-				<Skeleton className="h-40 w-full rounded-xl" />
-				<Skeleton className="h-40 w-full rounded-xl" />
+			<div className="grid grid-cols-2 gap-3 px-6 pb-4">
+				<Skeleton className="h-20 rounded-2xl" />
+				<Skeleton className="h-20 rounded-2xl" />
+			</div>
+			<div className="flex flex-col gap-3 px-6 pb-6">
+				<Skeleton className="h-20 rounded-2xl" />
+				<Skeleton className="h-20 rounded-2xl" />
 			</div>
 		</div>
 	);

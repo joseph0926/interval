@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/lib/date";
 import { MODULE_CONFIGS, isFocusStatus } from "@/types/engine.type";
 import { getStatusA11yLabel } from "@/lib/design-system";
 import { Clock, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { EngineModuleState } from "@/types/engine.type";
 
 interface ModuleCardProps {
@@ -25,15 +26,20 @@ export function ModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) {
 }
 
 function IntervalModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) {
+	const prefersReducedMotion = useReducedMotion();
 	const config = MODULE_CONFIGS[moduleState.moduleType];
-	const [remainingSeconds, setRemainingSeconds] = useState(
-		moduleState.remainingMin ? moduleState.remainingMin * 60 : 0,
-	);
+	const actionLabel = config?.actionLabel ?? "기록";
+
+	const [remainingSeconds, setRemainingSeconds] = useState(0);
 
 	useEffect(() => {
-		if (moduleState.status !== "COUNTDOWN" || !moduleState.targetTime) return;
+		if (moduleState.status !== "COUNTDOWN" || !moduleState.targetTime) {
+			setRemainingSeconds(0);
+			return;
+		}
 
 		const targetTime = new Date(moduleState.targetTime);
+
 		const updateRemaining = () => {
 			const now = new Date();
 			const diff = Math.max(0, Math.ceil((targetTime.getTime() - now.getTime()) / 1000));
@@ -47,86 +53,118 @@ function IntervalModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) 
 
 	const isCountdown = moduleState.status === "COUNTDOWN";
 	const isReady = moduleState.status === "READY";
-	const isNoBaseline = moduleState.status === "NO_BASELINE";
+	// const isNoBaseline = moduleState.status === "NO_BASELINE";
 	const isGap = moduleState.status === "GAP_DETECTED";
+
+	const remainingMin = moduleState.remainingMin ?? Math.ceil(remainingSeconds / 60);
+	const canCharge = isCountdown && remainingMin > 0;
 
 	const progress = useMemo(() => {
 		if (isCountdown && moduleState.targetIntervalMin) {
-			return Math.min(1, 1 - remainingSeconds / (moduleState.targetIntervalMin * 60));
+			const total = moduleState.targetIntervalMin * 60;
+			if (total <= 0) return 0;
+			return Math.max(0, Math.min(1, 1 - remainingSeconds / total));
 		}
 		return isReady ? 1 : 0;
 	}, [isCountdown, isReady, remainingSeconds, moduleState.targetIntervalMin]);
 
-	const isCaffeine = moduleState.moduleType === "CAFFEINE";
+	const a11yStatus = getStatusA11yLabel(moduleState.status);
+	const subtitle = getIntervalSubtitle(moduleState.status, remainingSeconds);
+
+	const net = moduleState.todayNetMin ?? 0;
+	const netIsPositive = net >= 0;
+	const netTone = net === 0 ? "text-text-secondary" : netIsPositive ? "text-earned" : "text-lost";
+
 	const actionCount = moduleState.todayActionCount ?? 0;
 	const dailyGoal = moduleState.dailyGoalCount;
-	const a11yStatus = getStatusA11yLabel(moduleState.status);
-
-	const netIsPositive = (moduleState.todayNetMin ?? 0) >= 0;
+	const countUnit = moduleState.moduleType === "CAFFEINE" ? "잔" : "회";
+	const showCountRow = actionCount > 0 || (dailyGoal ?? 0) > 0;
 
 	return (
 		<Card
-			className={`overflow-hidden border-0 bg-surface shadow-sm transition-shadow hover:shadow-md ${
-				isReady ? "ring-1 ring-success/30" : ""
-			}`}
+			className={cn(
+				"overflow-hidden border-0 rounded-3xl",
+				"bg-surface/70 backdrop-blur-xl ring-1 ring-inset ring-white/8",
+				"shadow-[0_12px_40px_rgba(0,0,0,0.14)]",
+				"transition-all duration-150 hover:bg-surface/80 hover:shadow-[0_14px_55px_rgba(0,0,0,0.18)]",
+				isReady && "neon-glow-success",
+				isCountdown && "neon-glow-primary",
+				isGap && "neon-glow-danger",
+			)}
 		>
 			<CardContent className="p-4">
-				<div className="flex items-start justify-between">
-					<div className="flex items-center gap-3">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0 flex items-center gap-3">
 						<div
-							className={`flex size-10 items-center justify-center rounded-xl ${
-								isReady ? "bg-success-muted" : isGap ? "bg-warning-muted" : "bg-muted"
-							}`}
+							className={cn(
+								"flex size-10 shrink-0 items-center justify-center rounded-2xl",
+								"ring-1 ring-inset ring-white/10",
+								isReady ? "bg-success/12" : isGap ? "bg-warning/12" : "bg-white/6",
+							)}
 						>
 							<span className="text-xl" role="img" aria-hidden="true">
 								{config.icon}
 							</span>
 						</div>
-						<div>
-							<p className="font-medium">{config.label}</p>
-							<p className="text-sm text-text-tertiary" aria-label={a11yStatus.description}>
-								{getStatusText(moduleState, remainingSeconds)}
+
+						<div className="min-w-0">
+							<p className="truncate font-semibold tracking-tight">{config.label}</p>
+							<p
+								className="mt-0.5 truncate text-xs leading-snug text-text-tertiary"
+								aria-label={a11yStatus.description || a11yStatus.label}
+							>
+								{subtitle}
 							</p>
 						</div>
 					</div>
-					<div className="text-right">
+
+					<div className="shrink-0 text-right">
 						<p
-							className={`text-lg font-bold tabular-nums ${netIsPositive ? "text-earned" : "text-lost"}`}
-							aria-label={`오늘 ${netIsPositive ? "벌어낸" : "잃은"} 거리 ${Math.abs(moduleState.todayNetMin ?? 0)}분`}
+							className={cn("text-lg font-semibold tabular-nums", netTone)}
+							aria-label={`오늘 순거리 ${netIsPositive ? "적립" : "차감"} ${Math.abs(net)}분`}
 						>
-							{netIsPositive ? "+" : ""}
-							{moduleState.todayNetMin}분
+							{netIsPositive && net !== 0 ? "+" : ""}
+							{net}분
 						</p>
-						<p className="text-xs text-text-tertiary">오늘 거리</p>
+						<p className="text-xs text-text-tertiary">오늘 순거리</p>
 					</div>
 				</div>
 
-				{isCaffeine && (
+				{showCountRow ? (
 					<div className="mt-3 flex items-center gap-2 text-sm">
 						<span className="text-text-tertiary">오늘</span>
-						<span className="font-medium">{actionCount}잔</span>
-						{dailyGoal && <span className="text-text-tertiary">/ {dailyGoal}잔</span>}
+						<span className="font-medium tabular-nums">
+							{actionCount}
+							{countUnit}
+						</span>
+						{dailyGoal ? (
+							<span className="text-text-tertiary tabular-nums">
+								/ {dailyGoal}
+								{countUnit}
+							</span>
+						) : null}
 					</div>
-				)}
+				) : null}
 
-				{isCountdown && (
-					<div className="mt-4">
-						<div className="mb-2 flex items-center justify-between">
-							<div className="flex items-center gap-2">
+				{isCountdown ? (
+					<div className="mt-4 rounded-2xl bg-white/4 p-3 ring-1 ring-inset ring-white/8">
+						<div className="mb-2 flex items-center justify-between gap-3">
+							<div className="min-w-0 flex items-center gap-2">
 								<Clock className="size-4 text-text-tertiary" aria-hidden="true" />
 								<span
-									className="text-2xl font-bold tabular-nums"
+									className="truncate text-2xl font-bold tabular-nums"
 									aria-label={`남은 시간 ${formatTime(remainingSeconds)}`}
 								>
 									{formatTime(remainingSeconds)}
 								</span>
 							</div>
-							<span className="text-sm text-text-tertiary">
-								목표 {moduleState.targetIntervalMin}분
+							<span className="shrink-0 text-xs text-text-tertiary tabular-nums">
+								목표 {moduleState.targetIntervalMin ?? "—"}분
 							</span>
 						</div>
+
 						<div
-							className="h-1.5 overflow-hidden rounded-full bg-muted"
+							className="h-1.5 overflow-hidden rounded-full bg-white/8"
 							role="progressbar"
 							aria-valuenow={Math.round(progress * 100)}
 							aria-valuemin={0}
@@ -134,21 +172,23 @@ function IntervalModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) 
 						>
 							<motion.div
 								className="h-full bg-primary"
-								initial={{ width: 0 }}
+								initial={prefersReducedMotion ? false : { width: 0 }}
 								animate={{ width: `${progress * 100}%` }}
-								transition={{ duration: 0.5, ease: "easeOut" }}
+								transition={
+									prefersReducedMotion ? { duration: 0 } : { duration: 0.45, ease: "easeOut" }
+								}
 							/>
 						</div>
 					</div>
-				)}
+				) : null}
 
-				<ModuleCardCTA
+				<IntervalCTA
 					status={moduleState.status}
+					actionLabel={actionLabel}
+					remainingMin={remainingMin}
+					canCharge={canCharge}
 					onAction={onAction}
 					onUrge={onUrge}
-					isReady={isReady}
-					isNoBaseline={isNoBaseline}
-					isGap={isGap}
 					isCountdown={isCountdown}
 				/>
 			</CardContent>
@@ -156,49 +196,49 @@ function IntervalModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) 
 	);
 }
 
-function ModuleCardCTA({
+function IntervalCTA({
 	status,
+	actionLabel,
+	remainingMin,
+	canCharge,
 	onAction,
 	onUrge,
-	isReady,
-	isNoBaseline,
-	isGap,
 	isCountdown,
 }: {
 	status: string;
+	actionLabel: string;
+	remainingMin: number;
+	canCharge: boolean;
 	onAction: () => void;
 	onUrge: () => void;
-	isReady: boolean;
-	isNoBaseline: boolean;
-	isGap: boolean;
 	isCountdown: boolean;
 }) {
-	if (isGap) {
+	if (status === "GAP_DETECTED") {
 		return (
 			<div className="mt-4">
 				<Button className="h-11 w-full gap-2" variant="outline" onClick={onAction}>
-					<span>복귀하기</span>
+					<span>다시 시작</span>
 					<ArrowRight className="size-4" />
 				</Button>
 			</div>
 		);
 	}
 
-	if (isReady) {
+	if (status === "NO_BASELINE") {
 		return (
 			<div className="mt-4">
 				<Button className="h-11 w-full" onClick={onAction}>
-					기록하기
+					첫 기록 남기기
 				</Button>
 			</div>
 		);
 	}
 
-	if (isNoBaseline) {
+	if (status === "READY") {
 		return (
 			<div className="mt-4">
 				<Button className="h-11 w-full" onClick={onAction}>
-					첫 기록하기
+					{actionLabel}
 				</Button>
 			</div>
 		);
@@ -206,13 +246,23 @@ function ModuleCardCTA({
 
 	if (isCountdown) {
 		return (
-			<div className="mt-4 flex gap-2">
-				<Button variant="default" className="h-11 flex-1" onClick={onUrge}>
-					미루기
-				</Button>
-				<Button variant="ghost" className="h-11 flex-1 text-text-secondary" onClick={onAction}>
-					기록
-				</Button>
+			<div className="mt-4">
+				<div className="flex gap-2">
+					<Button variant="default" className="h-11 flex-1" onClick={onUrge}>
+						기다려서 적립
+					</Button>
+					<Button variant="ghost" className="h-11 flex-1 text-text-secondary" onClick={onAction}>
+						지금 {actionLabel}
+					</Button>
+				</div>
+
+				{canCharge ? (
+					<p className="mt-2 text-center text-xs text-text-tertiary">
+						지금 기록하면{" "}
+						<span className="font-medium tabular-nums text-text-secondary">{remainingMin}분</span>{" "}
+						차감될 수 있어요
+					</p>
+				) : null}
 			</div>
 		);
 	}
@@ -221,17 +271,26 @@ function ModuleCardCTA({
 }
 
 function FocusModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) {
+	const prefersReducedMotion = useReducedMotion();
 	const config = MODULE_CONFIGS[moduleState.moduleType];
+
 	const [elapsedSeconds, setElapsedSeconds] = useState(0);
 	const [remainingSeconds, setRemainingSeconds] = useState(0);
 
 	const isIdle = moduleState.status === "FOCUS_IDLE";
-	const isRunning = moduleState.status === "FOCUS_RUNNING";
+	const isActive =
+		moduleState.status === "FOCUS_RUNNING" || moduleState.status === "FOCUS_COACHING";
+	const isCoaching = moduleState.status === "FOCUS_COACHING";
+
 	const session = moduleState.focusSession;
 	const defaultSessionMin = moduleState.defaultSessionMin ?? 10;
 
 	useEffect(() => {
-		if (!isRunning || !session) return;
+		if (!isActive || !session) {
+			setElapsedSeconds(0);
+			setRemainingSeconds(0);
+			return;
+		}
 
 		const sessionStartTime = new Date(session.sessionStartTime);
 		const totalPlannedMs = (session.plannedMinutes + session.extendedMinutes) * 60 * 1000;
@@ -250,112 +309,136 @@ function FocusModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) {
 		updateTimer();
 		const interval = setInterval(updateTimer, 1000);
 		return () => clearInterval(interval);
-	}, [isRunning, session]);
+	}, [isActive, session]);
 
 	const totalFocusMin = moduleState.todayFocusTotalMin ?? 0;
-	const netIsPositive = (moduleState.todayNetMin ?? 0) >= 0;
+
+	const net = moduleState.todayNetMin ?? 0;
+	const netIsPositive = net >= 0;
+	const netTone = net === 0 ? "text-text-secondary" : netIsPositive ? "text-earned" : "text-lost";
+
+	const focusSubtitle = isIdle
+		? "집중을 시작해볼까요?"
+		: isCoaching
+			? "흐트러짐 감지 · 30초 숨 고르기"
+			: `${Math.floor(elapsedSeconds / 60)}분째 집중 중`;
+
+	const totalSeconds = Math.max(
+		1,
+		(session?.plannedMinutes ?? defaultSessionMin) * 60 + (session?.extendedMinutes ?? 0) * 60,
+	);
+	const focusProgress = Math.min(1, Math.max(0, elapsedSeconds / totalSeconds));
 
 	return (
 		<Card
-			className={`overflow-hidden border-0 bg-surface shadow-sm transition-shadow hover:shadow-md ${
-				isRunning ? "ring-1 ring-focus/30" : ""
-			}`}
+			className={cn(
+				"overflow-hidden border-0 rounded-3xl",
+				"bg-surface/70 backdrop-blur-xl ring-1 ring-inset ring-white/8",
+				"shadow-[0_12px_40px_rgba(0,0,0,0.14)]",
+				"transition-all duration-150 hover:bg-surface/80 hover:shadow-[0_14px_55px_rgba(0,0,0,0.18)]",
+				isActive && "neon-glow-focus",
+				isCoaching && "neon-glow-danger",
+			)}
 		>
 			<CardContent className="p-4">
-				<div className="flex items-start justify-between">
-					<div className="flex items-center gap-3">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0 flex items-center gap-3">
 						<div
-							className={`flex size-10 items-center justify-center rounded-xl ${
-								isRunning ? "bg-focus/15" : "bg-muted"
-							}`}
+							className={cn(
+								"flex size-10 shrink-0 items-center justify-center rounded-2xl",
+								"ring-1 ring-inset ring-white/10",
+								isActive ? "bg-focus/12" : "bg-white/6",
+							)}
 						>
 							<span className="text-xl" role="img" aria-hidden="true">
 								{config.icon}
 							</span>
 						</div>
-						<div>
-							<p className="font-medium">{config.label}</p>
-							<p className="text-sm text-text-tertiary">
-								{isIdle && "세션을 시작해보세요"}
-								{isRunning && `${Math.floor(elapsedSeconds / 60)}분째 집중 중`}
+
+						<div className="min-w-0">
+							<p className="truncate font-semibold tracking-tight">{config.label}</p>
+							<p className="mt-0.5 truncate text-xs leading-snug text-text-tertiary">
+								{focusSubtitle}
 							</p>
 						</div>
 					</div>
-					<div className="text-right">
-						<p
-							className={`text-lg font-bold tabular-nums ${netIsPositive ? "text-earned" : "text-lost"}`}
-						>
-							{netIsPositive ? "+" : ""}
-							{moduleState.todayNetMin}분
+
+					<div className="shrink-0 text-right">
+						<p className={cn("text-lg font-semibold tabular-nums", netTone)}>
+							{netIsPositive && net !== 0 ? "+" : ""}
+							{net}분
 						</p>
-						<p className="text-xs text-text-tertiary">오늘 거리</p>
+						<p className="text-xs text-text-tertiary">오늘 순거리</p>
 					</div>
 				</div>
 
 				<div className="mt-3 flex items-center gap-2 text-sm">
 					<span className="text-text-tertiary">총 집중</span>
-					<span className="font-medium">{totalFocusMin}분</span>
+					<span className="font-medium tabular-nums">{totalFocusMin}분</span>
 				</div>
 
-				{isRunning && session && (
-					<div className="mt-4">
-						<div className="mb-2 flex items-center justify-between">
-							<div className="flex items-center gap-2">
+				{isActive && session ? (
+					<div className="mt-4 rounded-2xl bg-white/4 p-3 ring-1 ring-inset ring-white/8">
+						<div className="mb-2 flex items-center justify-between gap-3">
+							<div className="min-w-0 flex items-baseline gap-2">
 								<span
-									className="text-2xl font-bold tabular-nums text-focus"
+									className="truncate text-2xl font-bold tabular-nums text-focus"
 									aria-label={`경과 시간 ${formatTime(elapsedSeconds)}`}
 								>
 									{formatTime(elapsedSeconds)}
 								</span>
-								<span className="text-xs text-text-tertiary">경과</span>
+								<span className="shrink-0 text-xs text-text-tertiary">경과</span>
 							</div>
-							<div className="flex items-center gap-2">
+
+							<div className="shrink-0 flex items-baseline gap-2">
 								<span className="text-lg tabular-nums text-text-secondary">
 									{formatTime(remainingSeconds)}
 								</span>
 								<span className="text-xs text-text-tertiary">남음</span>
 							</div>
 						</div>
+
 						<div
-							className="h-1.5 overflow-hidden rounded-full bg-muted"
+							className="h-1.5 overflow-hidden rounded-full bg-white/8"
 							role="progressbar"
-							aria-valuenow={Math.round(
-								(elapsedSeconds / ((session.plannedMinutes + session.extendedMinutes) * 60)) * 100,
-							)}
+							aria-valuenow={Math.round(focusProgress * 100)}
 							aria-valuemin={0}
 							aria-valuemax={100}
 						>
 							<motion.div
 								className="h-full bg-focus"
-								initial={{ width: 0 }}
-								animate={{
-									width: `${Math.min(100, (elapsedSeconds / ((session.plannedMinutes + session.extendedMinutes) * 60)) * 100)}%`,
-								}}
-								transition={{ duration: 0.5, ease: "easeOut" }}
+								initial={prefersReducedMotion ? false : { width: 0 }}
+								animate={{ width: `${focusProgress * 100}%` }}
+								transition={
+									prefersReducedMotion ? { duration: 0 } : { duration: 0.45, ease: "easeOut" }
+								}
 							/>
 						</div>
-						{session.extendedMinutes > 0 && (
-							<p className="mt-1.5 text-xs text-focus">+{session.extendedMinutes}분 연장됨</p>
-						)}
+
+						{session.extendedMinutes > 0 ? (
+							<p className="mt-1.5 text-xs text-focus tabular-nums">
+								+{session.extendedMinutes}분 연장됨
+							</p>
+						) : null}
 					</div>
-				)}
+				) : null}
 
 				<div className="mt-4">
 					{isIdle ? (
 						<Button className="h-11 w-full" onClick={onAction}>
 							{defaultSessionMin}분 집중 시작
 						</Button>
-					) : isRunning ? (
+					) : isActive ? (
 						<div className="flex gap-2">
 							<Button variant="outline" className="h-11 flex-1" onClick={onUrge}>
-								딴짓 충동
+								숨 고르기
 							</Button>
 							<Button
 								variant="ghost"
 								className="h-11 flex-1 text-text-secondary"
 								onClick={onAction}
 							>
-								종료
+								세션 종료
 							</Button>
 						</div>
 					) : null}
@@ -365,18 +448,20 @@ function FocusModuleCard({ moduleState, onAction, onUrge }: ModuleCardProps) {
 	);
 }
 
-function getStatusText(moduleState: EngineModuleState, remainingSeconds: number): string {
-	switch (moduleState.status) {
+function getIntervalSubtitle(status: string, remainingSeconds: number): string {
+	switch (status) {
 		case "NO_BASELINE":
-			return "첫 기록을 시작해보세요";
+			return "오늘 첫 기록을 남겨보세요";
 		case "COUNTDOWN":
-			if (remainingSeconds <= 0) return "목표 시간 도달";
-			if (remainingSeconds <= 60) return "거의 다 왔어요";
-			return "목표까지 대기 중";
+			return remainingSeconds > 0
+				? `다음 기록까지 ${formatTime(remainingSeconds)}`
+				: "이제 기록 가능해요";
 		case "READY":
-			return "목표 달성, 기록 가능";
+			return "지금 기록 가능해요";
 		case "GAP_DETECTED":
-			return "다시 시작할 준비가 됐어요";
+			return "오랜만이에요 · 다시 시작해요";
+		case "SETUP_REQUIRED":
+			return "설정이 필요해요";
 		default:
 			return "";
 	}

@@ -86,8 +86,8 @@ export function formatMinutesNeutral(minutes: number): string {
 }
 
 export const A11Y_LABELS = {
-	earned: "벌어낸 시간",
-	lost: "잃은 시간",
+	earned: "적립 시간",
+	lost: "차감 시간",
 	net: "순거리",
 	positive: "증가",
 	negative: "감소",

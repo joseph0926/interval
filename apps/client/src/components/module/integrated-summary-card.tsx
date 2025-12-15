@@ -44,7 +44,7 @@ export function BentoSummaryCard({ integrated, streak = 0, nextMilestone }: Bent
 						<TrendingUp className="size-4 text-success" aria-hidden="true" />
 					</div>
 					<div>
-						<p className="text-xs text-text-tertiary">벌어낸</p>
+						<p className="text-xs text-text-tertiary">적립</p>
 						<p className="text-lg font-semibold tabular-nums text-earned">
 							+{integrated.earnedMin}
 							<span className="text-sm font-normal text-text-tertiary">분</span>
@@ -59,7 +59,7 @@ export function BentoSummaryCard({ integrated, streak = 0, nextMilestone }: Bent
 						<TrendingDown className="size-4 text-danger" aria-hidden="true" />
 					</div>
 					<div>
-						<p className="text-xs text-text-tertiary">잃은</p>
+						<p className="text-xs text-text-tertiary">차감</p>
 						<p className="text-lg font-semibold tabular-nums text-lost">
 							-{integrated.lostMin}
 							<span className="text-sm font-normal text-text-tertiary">분</span>

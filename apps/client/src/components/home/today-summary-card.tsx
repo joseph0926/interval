@@ -29,7 +29,7 @@ export function TodaySummaryCard({ summary }: TodaySummaryCardProps) {
 						{summary.totalDelayMinutes}
 						<span className="text-sm font-normal">분</span>
 					</p>
-					<p className="text-xs text-muted-foreground">벌어낸 거리</p>
+					<p className="text-xs text-muted-foreground">적립 거리</p>
 				</div>
 			</CardContent>
 		</Card>
