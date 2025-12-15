@@ -1,6 +1,8 @@
 import { StyleSheet } from "react-native";
 import { COLORS } from "./theme";
 
+type SafeAreaInsets = { top: number; bottom: number; left: number; right: number };
+
 export const WEBVIEW_PROPS = {
 	cacheEnabled: true,
 	domStorageEnabled: true,
@@ -32,12 +34,22 @@ export const webViewStyles = StyleSheet.create({
 export function createInjectedScript(params: {
 	sessionId?: string | null;
 	appVersion: string;
+	safeAreaInsets: SafeAreaInsets;
 }): string {
+	const { sessionId, appVersion, safeAreaInsets } = params;
+
 	return `
 		(function() {
+      var root = document.documentElement;
+
+      root.style.setProperty('--safe-top', '${safeAreaInsets.top}px');
+      root.style.setProperty('--safe-bottom', '${safeAreaInsets.bottom}px');
+      root.style.setProperty('--safe-left', '${safeAreaInsets.left}px');
+      root.style.setProperty('--safe-right', '${safeAreaInsets.right}px');
+
 			window.isNativeApp = true;
-			window.nativeAppVersion = ${JSON.stringify(params.appVersion)};
-			window.sessionId = ${JSON.stringify(params.sessionId ?? "")};
+			window.nativeAppVersion = ${JSON.stringify(appVersion)};
+			window.sessionId = ${JSON.stringify(sessionId ?? "")};
 
 			window.addEventListener('nativeMessage', function(e) {
 				console.log('Message from native:', e.detail);

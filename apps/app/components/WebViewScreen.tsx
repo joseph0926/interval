@@ -1,7 +1,7 @@
 import { useRef, useCallback, useMemo } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "@/hooks/useSession";
 import { useBridge, parseBridgeMessage } from "@/lib/bridge";
 import { CONFIG } from "@/lib/config";
@@ -14,6 +14,7 @@ interface WebViewScreenProps {
 
 export function WebViewScreen({ path }: WebViewScreenProps) {
 	const webViewRef = useRef<WebView>(null);
+	const insets = useSafeAreaInsets();
 	const { sessionId } = useSession();
 	const { handleMessage } = useBridge(webViewRef);
 
@@ -24,8 +25,9 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 			createInjectedScript({
 				sessionId,
 				appVersion: CONFIG.APP_VERSION,
+				safeAreaInsets: insets,
 			}),
-		[sessionId],
+		[sessionId, insets],
 	);
 
 	const onMessage = useCallback(
@@ -52,7 +54,7 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 	}, []);
 
 	return (
-		<SafeAreaView style={webViewStyles.container} edges={["top", "bottom"]}>
+		<SafeAreaView style={webViewStyles.container} edges={["top"]}>
 			<WebView
 				ref={webViewRef}
 				source={{ uri }}

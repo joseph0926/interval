@@ -190,7 +190,7 @@ export function OnboardingFlow() {
 	const showStepIndicator = currentStep !== "welcome" && currentStep !== "first-win";
 
 	return (
-		<div className="flex min-h-dvh flex-col">
+		<div className="flex min-h-dvh flex-col pb-[calc(4rem+var(--safe-bottom))]">
 			{showStepIndicator && (
 				<div className="px-6 pt-6">
 					<StepIndicator current={progressStepIndex} total={progressTotal} />

@@ -2,8 +2,8 @@
 	"expo": {
 		"name": "간격",
 		"slug": "interval-app",
-		"description": "지금 한 개비 말고, 조금 있다가 한 개비. 담배와의 간격을 벌려주는 심리 타이머 앱",
-		"version": "1.0.3",
+		"description": "지금 당장 말고, 조금 있다가",
+		"version": "1.0.4",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "interval",
@@ -18,7 +18,7 @@
 		},
 		"ios": {
 			"supportsTablet": false,
-			"bundleIdentifier": "com.intervalapp.smoking",
+			"bundleIdentifier": "com.intervalapp.habit",
 			"buildNumber": "1",
 			"infoPlist": {
 				"CFBundleDisplayName": "간격",
@@ -30,7 +30,7 @@
 				"foregroundImage": "./assets/images/adaptive-icon.png",
 				"backgroundColor": "#000000"
 			},
-			"package": "com.intervalapp.smoking",
+			"package": "com.intervalapp.habit",
 			"versionCode": 1,
 			"permissions": [
 				"android.permission.SCHEDULE_EXACT_ALARM",
@@ -47,7 +47,7 @@
 			"favicon": "./assets/images/favicon.png",
 			"name": "간격",
 			"shortName": "간격",
-			"description": "담배와의 간격을 벌려주는 심리 타이머",
+			"description": "습관과의 간격을 벌려주는 심리 타이머",
 			"themeColor": "#4CAF50",
 			"backgroundColor": "#000000"
 		},

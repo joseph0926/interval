@@ -119,14 +119,14 @@ pnpm web
 
 ### WebView -> Native 액션
 
-| 액션                              | 설명                      |
-| --------------------------------- | ------------------------- |
-| `NAVIGATE`                        | 페이지 네비게이션         |
-| `SMOKING_RECORDED`                | 기록 완료 (알림 재스케줄) |
-| `REQUEST_NOTIFICATION_PERMISSION` | 알림 권한 요청            |
-| `SCHEDULE_TARGET_NOTIFICATION`    | 목표 시간 알림 스케줄     |
-| `HAPTIC_FEEDBACK`                 | 진동 피드백               |
-| `ONBOARDING_COMPLETE`             | 온보딩 완료               |
+| 액션                              | 설명                           |
+| --------------------------------- | ------------------------------ |
+| `NAVIGATE`                        | 페이지 네비게이션              |
+| `SMOKING_RECORDED`                | 습관 기록 완료 (알림 재스케줄) |
+| `REQUEST_NOTIFICATION_PERMISSION` | 알림 권한 요청                 |
+| `SCHEDULE_TARGET_NOTIFICATION`    | 목표 시간 알림 스케줄          |
+| `HAPTIC_FEEDBACK`                 | 진동 피드백                    |
+| `ONBOARDING_COMPLETE`             | 온보딩 완료                    |
 
 ### Native -> WebView 응답
 
@@ -134,7 +134,7 @@ pnpm web
 | -------------------------------- | ---------------- |
 | `NOTIFICATION_PERMISSION_RESULT` | 권한 결과        |
 | `NOTIFICATION_SCHEDULED`         | 알림 스케줄 결과 |
-| `SMOKING_RECORDED_ACK`           | 기록 확인        |
+| `SMOKING_RECORDED_ACK`           | 습관 기록 확인   |
 
 ---
 
@@ -167,8 +167,8 @@ eas submit --platform android
 
 ## 앱 정보
 
-| 항목              | 값                      |
-| ----------------- | ----------------------- |
-| Package (Android) | com.intervalapp.smoking |
-| Bundle ID (iOS)   | com.intervalapp.smoking |
-| Version           | 1.0.2                   |
+| 항목              | 값                    |
+| ----------------- | --------------------- |
+| Package (Android) | com.intervalapp.habit |
+| Bundle ID (iOS)   | com.intervalapp.habit |
+| Version           | 1.0.2                 |
