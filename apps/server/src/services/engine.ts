@@ -91,7 +91,9 @@ async function getUserSettings(userId: string) {
 	const dayAnchorMinutes = user.dayAnchorMinutes ?? 240;
 
 	const moduleSettings: ModuleSetting[] = MODULE_TYPES.map((moduleType) => {
-		const existing = user.moduleSettings.find((s) => s.moduleType === moduleType);
+		const existing = user.moduleSettings.find(
+			(s: { moduleType: string }) => s.moduleType === moduleType,
+		);
 
 		if (existing) {
 			return {

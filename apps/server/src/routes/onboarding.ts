@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { requireAuth } from "../hooks/auth.js";
 import { toUserDto } from "../mappers/user.js";
 import { ModuleTypeSchema, type ModuleType } from "@interval/engine";
@@ -52,7 +53,7 @@ export const onboardingRoutes: FastifyPluginAsync = async (app) => {
 			FOCUS: 10,
 		};
 
-		const user = await prisma.$transaction(async (tx) => {
+		const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 			const updatedUser = await tx.user.update({
 				where: { id: userId },
 				data: {
