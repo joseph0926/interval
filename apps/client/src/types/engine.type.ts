@@ -13,6 +13,14 @@ export type {
 	EngineCtaKey,
 } from "@/lib/api-types";
 
+import type { EngineModuleType } from "@/lib/api-types";
+export {
+	INTERVAL_MODULES,
+	SESSION_MODULES,
+	isIntervalModule,
+	isSessionModule,
+} from "@interval/engine";
+
 export type ModuleCardState =
 	| { type: "NO_BASELINE" }
 	| { type: "COUNTDOWN"; targetTime: Date; remainingSeconds: number }
@@ -22,8 +30,8 @@ export type ModuleCardState =
 	| { type: "FOCUS_RUNNING"; elapsedSeconds: number; remainingSeconds: number }
 	| { type: "FOCUS_COACHING" };
 
-export interface ModuleConfig {
-	moduleType: "SMOKE" | "SNS" | "CAFFEINE" | "FOCUS";
+export interface ModuleUIConfig {
+	moduleType: EngineModuleType;
 	label: string;
 	icon: string;
 	actionLabel: string;
@@ -32,7 +40,7 @@ export interface ModuleConfig {
 	isSessionBased?: boolean;
 }
 
-export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
+export const MODULE_CONFIGS: Record<EngineModuleType, ModuleUIConfig> = {
 	SMOKE: {
 		moduleType: "SMOKE",
 		label: "담배",
@@ -67,17 +75,6 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
 		isSessionBased: true,
 	},
 };
-
-export const INTERVAL_MODULES = ["SMOKE", "SNS", "CAFFEINE"] as const;
-export const SESSION_MODULES = ["FOCUS"] as const;
-
-export function isIntervalModule(moduleType: string): boolean {
-	return INTERVAL_MODULES.includes(moduleType as (typeof INTERVAL_MODULES)[number]);
-}
-
-export function isSessionModule(moduleType: string): boolean {
-	return SESSION_MODULES.includes(moduleType as (typeof SESSION_MODULES)[number]);
-}
 
 export function isFocusStatus(status: string): boolean {
 	return status === "FOCUS_IDLE" || status === "FOCUS_RUNNING" || status === "FOCUS_COACHING";
