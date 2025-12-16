@@ -7,8 +7,11 @@ import type {
 	WeeklyReport,
 	WeeklyModuleReport,
 	ModuleType,
+	ModuleStatus,
 	FloatingSuggestion,
 	FocusSessionInfo,
+	CtaPrimary,
+	CtaKey,
 	SessionStartPayload,
 	SessionEndPayload,
 } from "./types.js";
@@ -40,6 +43,20 @@ interface CalculateModuleStateInput {
 	dayAnchorMinutes: number;
 }
 
+interface TodayStats {
+	earnedMin: number;
+	lostMin: number;
+	netMin: number;
+	actionCount: number;
+}
+
+interface TimingInfo {
+	lastActionTime?: string;
+	targetTime?: string;
+	remainingMin?: number;
+	actualIntervalMin?: number;
+}
+
 export function calculateGapThreshold(targetIntervalMin: number): number {
 	const baseThreshold = DEFAULT_GAP_THRESHOLD_HOURS * 60;
 	const dynamicThreshold = targetIntervalMin * GAP_MULTIPLIER;
@@ -47,10 +64,10 @@ export function calculateGapThreshold(targetIntervalMin: number): number {
 }
 
 export function calculateModuleState(input: CalculateModuleStateInput): ModuleState {
-	const { moduleType, setting, events, now, dayAnchorMinutes } = input;
+	const { moduleType, setting } = input;
 
 	if (!setting || !setting.enabled) {
-		return createDisabledState(moduleType);
+		return buildModuleState({ moduleType, status: "DISABLED" });
 	}
 
 	if (isSessionModule(moduleType)) {
@@ -64,9 +81,36 @@ function calculateIntervalModuleState(input: CalculateModuleStateInput): ModuleS
 	const { moduleType, setting, events, now, dayAnchorMinutes } = input;
 
 	if (!setting) {
-		return createDisabledState(moduleType);
+		return buildModuleState({ moduleType, status: "DISABLED" });
 	}
 
+	const todayStats = calculateIntervalTodayStats(
+		events,
+		now,
+		dayAnchorMinutes,
+		setting.targetIntervalMin,
+	);
+	const timing = calculateIntervalTiming(events, now, setting.targetIntervalMin);
+	const status = deriveIntervalStatus(timing, setting.targetIntervalMin);
+	const cta = deriveCta(status);
+
+	return buildModuleState({
+		moduleType,
+		status,
+		timing,
+		todayStats,
+		cta,
+		targetIntervalMin: setting.targetIntervalMin,
+		dailyGoalCount: setting.config?.dailyGoalCount,
+	});
+}
+
+function calculateIntervalTodayStats(
+	events: IntervalEvent[],
+	now: Date,
+	dayAnchorMinutes: number,
+	targetIntervalMin: number,
+): TodayStats {
 	const todayKey = getLocalDayKey(now, dayAnchorMinutes);
 	const todayEvents = events.filter((e) => e.localDayKey === todayKey);
 
@@ -75,6 +119,25 @@ function calculateIntervalModuleState(input: CalculateModuleStateInput): ModuleS
 	);
 	const delayEvents = todayEvents.filter((e) => e.eventType === "DELAY");
 
+	const { todayEarnedMin, todayLostMin } = calculateDistances(
+		actionEvents,
+		delayEvents,
+		targetIntervalMin,
+	);
+
+	return {
+		earnedMin: todayEarnedMin,
+		lostMin: todayLostMin,
+		netMin: Math.max(0, todayEarnedMin - todayLostMin),
+		actionCount: actionEvents.length,
+	};
+}
+
+function calculateIntervalTiming(
+	events: IntervalEvent[],
+	now: Date,
+	targetIntervalMin: number,
+): TimingInfo {
 	const allActionEvents = events.filter(
 		(e) => e.eventType === "ACTION" && e.actionKind === "CONSUME_OR_OPEN",
 	);
@@ -82,120 +145,176 @@ function calculateIntervalModuleState(input: CalculateModuleStateInput): ModuleS
 		(a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 	)[0];
 
-	const { todayEarnedMin, todayLostMin } = calculateDistances(
-		actionEvents,
-		delayEvents,
-		setting.targetIntervalMin,
-	);
-	const todayNetMin = Math.max(0, todayEarnedMin - todayLostMin);
-	const todayActionCount = actionEvents.length;
-
 	if (!lastActionEvent) {
-		return createNoBaselineState(
-			moduleType,
-			setting.targetIntervalMin,
-			todayEarnedMin,
-			todayLostMin,
-			todayNetMin,
-			todayActionCount,
-			setting.config?.dailyGoalCount,
-		);
+		return {};
 	}
 
 	const lastActionTime = new Date(lastActionEvent.timestamp);
 	const elapsedMin = getElapsedMinutes(lastActionTime, now);
-	const gapThreshold = calculateGapThreshold(setting.targetIntervalMin);
-
-	if (elapsedMin > gapThreshold) {
-		return createGapDetectedState(
-			moduleType,
-			lastActionEvent.timestamp,
-			setting.targetIntervalMin,
-			todayEarnedMin,
-			todayLostMin,
-			todayNetMin,
-			todayActionCount,
-			setting.config?.dailyGoalCount,
-		);
-	}
-
-	const targetTime = addMinutes(lastActionTime, setting.targetIntervalMin);
+	const targetTime = addMinutes(lastActionTime, targetIntervalMin);
 	const remainingMin = Math.max(0, Math.ceil((targetTime.getTime() - now.getTime()) / 60000));
 
-	if (remainingMin > 0) {
-		return createCountdownState(
-			moduleType,
-			lastActionEvent.timestamp,
-			setting.targetIntervalMin,
-			targetTime,
-			remainingMin,
-			elapsedMin,
-			todayEarnedMin,
-			todayLostMin,
-			todayNetMin,
-			todayActionCount,
-			setting.config?.dailyGoalCount,
-		);
+	return {
+		lastActionTime: lastActionEvent.timestamp,
+		targetTime: targetTime.toISOString(),
+		remainingMin,
+		actualIntervalMin: elapsedMin,
+	};
+}
+
+function deriveIntervalStatus(timing: TimingInfo, targetIntervalMin: number): ModuleStatus {
+	if (!timing.lastActionTime) {
+		return "NO_BASELINE";
 	}
 
-	return createReadyState(
+	const gapThreshold = calculateGapThreshold(targetIntervalMin);
+	if ((timing.actualIntervalMin ?? 0) > gapThreshold) {
+		return "GAP_DETECTED";
+	}
+
+	if ((timing.remainingMin ?? 0) > 0) {
+		return "COUNTDOWN";
+	}
+
+	return "READY";
+}
+
+function deriveCta(status: ModuleStatus): CtaPrimary {
+	const ctaMap: Record<ModuleStatus, { key: CtaKey; enabled: boolean }> = {
+		DISABLED: { key: "LOG_ACTION", enabled: false },
+		SETUP_REQUIRED: { key: "LOG_ACTION", enabled: false },
+		NO_BASELINE: { key: "LOG_ACTION", enabled: true },
+		GAP_DETECTED: { key: "RECOVER", enabled: true },
+		COUNTDOWN: { key: "URGE", enabled: true },
+		READY: { key: "LOG_ACTION", enabled: true },
+		FOCUS_IDLE: { key: "START_SESSION", enabled: true },
+		FOCUS_RUNNING: { key: "URGE_INTERRUPT", enabled: true },
+		FOCUS_COACHING: { key: "URGE_INTERRUPT", enabled: true },
+	};
+	return ctaMap[status];
+}
+
+interface BuildModuleStateInput {
+	moduleType: ModuleType;
+	status: ModuleStatus;
+	timing?: TimingInfo;
+	todayStats?: TodayStats;
+	cta?: CtaPrimary;
+	targetIntervalMin?: number;
+	dailyGoalCount?: number;
+	defaultSessionMin?: number;
+	focusSession?: FocusSessionInfo;
+	todayFocusTotalMin?: number;
+}
+
+function buildModuleState(input: BuildModuleStateInput): ModuleState {
+	const {
 		moduleType,
-		lastActionEvent.timestamp,
-		setting.targetIntervalMin,
-		targetTime,
-		elapsedMin,
-		todayEarnedMin,
-		todayLostMin,
-		todayNetMin,
-		todayActionCount,
-		setting.config?.dailyGoalCount,
-	);
+		status,
+		timing = {},
+		todayStats = { earnedMin: 0, lostMin: 0, netMin: 0, actionCount: 0 },
+		cta = { key: "LOG_ACTION" as CtaKey, enabled: false },
+		targetIntervalMin,
+		dailyGoalCount,
+		defaultSessionMin,
+		focusSession,
+		todayFocusTotalMin = 0,
+	} = input;
+
+	return {
+		moduleType,
+		status,
+		lastActionTime: timing.lastActionTime,
+		targetIntervalMin,
+		targetTime: timing.targetTime,
+		remainingMin: timing.remainingMin,
+		actualIntervalMin: timing.actualIntervalMin,
+		todayEarnedMin: todayStats.earnedMin,
+		todayLostMin: todayStats.lostMin,
+		todayNetMin: todayStats.netMin,
+		todayActionCount: todayStats.actionCount,
+		todayFocusTotalMin,
+		dailyGoalCount,
+		defaultSessionMin,
+		focusSession,
+		ctaPrimary: cta,
+	};
 }
 
 function calculateFocusModuleState(input: CalculateModuleStateInput): ModuleState {
 	const { moduleType, setting, events, now, dayAnchorMinutes } = input;
 
 	if (!setting) {
-		return createDisabledState(moduleType);
+		return buildModuleState({ moduleType, status: "DISABLED" });
 	}
 
+	const defaultSessionMin = setting.config?.defaultSessionMin ?? 10;
+	const focusStats = calculateFocusTodayStats(events, now, dayAnchorMinutes);
+	const sessionInfo = calculateFocusSession(events, now);
+
+	const status: ModuleStatus = sessionInfo ? "FOCUS_RUNNING" : "FOCUS_IDLE";
+	const isLongSession = sessionInfo
+		? sessionInfo.elapsedMinutes > LONG_SESSION_THRESHOLD_HOURS * 60
+		: false;
+	const cta: CtaPrimary = sessionInfo
+		? { key: isLongSession ? "END_SESSION" : "URGE_INTERRUPT", enabled: true }
+		: { key: "START_SESSION", enabled: true };
+
+	return buildModuleState({
+		moduleType,
+		status,
+		todayStats: {
+			earnedMin: focusStats.earnedMin,
+			lostMin: 0,
+			netMin: focusStats.earnedMin,
+			actionCount: 0,
+		},
+		cta,
+		defaultSessionMin,
+		focusSession: sessionInfo,
+		todayFocusTotalMin: focusStats.focusTotalMin,
+	});
+}
+
+interface FocusTodayStats {
+	earnedMin: number;
+	focusTotalMin: number;
+}
+
+function calculateFocusTodayStats(
+	events: IntervalEvent[],
+	now: Date,
+	dayAnchorMinutes: number,
+): FocusTodayStats {
 	const todayKey = getLocalDayKey(now, dayAnchorMinutes);
 	const todayEvents = events.filter((e) => e.localDayKey === todayKey);
+
 	const delayEvents = todayEvents.filter((e) => e.eventType === "DELAY");
+	const earnedMin = delayEvents.reduce((sum, e) => sum + (e.delayMinutes ?? 0), 0);
 
-	const todayEarnedMin = delayEvents.reduce((sum, e) => sum + (e.delayMinutes ?? 0), 0);
-
-	const todaySessionEnds = todayEvents.filter(
+	const sessionEnds = todayEvents.filter(
 		(e) => e.eventType === "ACTION" && e.actionKind === "SESSION_END",
 	);
-	const todayFocusTotalMin = todaySessionEnds.reduce((sum, e) => {
+	const focusTotalMin = sessionEnds.reduce((sum, e) => {
 		const payload = e.payload as SessionEndPayload | undefined;
 		const parsed = SessionEndPayloadSchema.safeParse(payload);
-		if (parsed.success) {
-			return sum + parsed.data.actualMinutes;
-		}
-		return sum;
+		return parsed.success ? sum + parsed.data.actualMinutes : sum;
 	}, 0);
 
-	const allSessionStarts = events
+	return { earnedMin, focusTotalMin };
+}
+
+function calculateFocusSession(events: IntervalEvent[], now: Date): FocusSessionInfo | undefined {
+	const sessionStarts = events
 		.filter((e) => e.eventType === "ACTION" && e.actionKind === "SESSION_START")
 		.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-	const lastSessionStart = allSessionStarts[0];
-
+	const lastSessionStart = sessionStarts[0];
 	if (!lastSessionStart) {
-		return createFocusIdleState(
-			moduleType,
-			setting.config?.defaultSessionMin ?? 10,
-			todayEarnedMin,
-			todayFocusTotalMin,
-		);
+		return undefined;
 	}
 
 	const sessionStartTime = new Date(lastSessionStart.timestamp);
-	const payload = lastSessionStart.payload as SessionStartPayload | undefined;
-	const parsed = SessionStartPayloadSchema.safeParse(payload);
-	const plannedMinutes = parsed.success ? parsed.data.plannedMinutes : 10;
 
 	const sessionEndsAfterStart = events.filter(
 		(e) =>
@@ -205,13 +324,12 @@ function calculateFocusModuleState(input: CalculateModuleStateInput): ModuleStat
 	);
 
 	if (sessionEndsAfterStart.length > 0) {
-		return createFocusIdleState(
-			moduleType,
-			setting.config?.defaultSessionMin ?? 10,
-			todayEarnedMin,
-			todayFocusTotalMin,
-		);
+		return undefined;
 	}
+
+	const payload = lastSessionStart.payload as SessionStartPayload | undefined;
+	const parsed = SessionStartPayloadSchema.safeParse(payload);
+	const plannedMinutes = parsed.success ? parsed.data.plannedMinutes : 10;
 
 	const delaysAfterStart = events.filter(
 		(e) =>
@@ -221,28 +339,16 @@ function calculateFocusModuleState(input: CalculateModuleStateInput): ModuleStat
 	);
 	const extendedMinutes = delaysAfterStart.reduce((sum, e) => sum + (e.delayMinutes ?? 0), 0);
 
-	const totalPlannedMinutes = plannedMinutes + extendedMinutes;
 	const elapsedMinutes = getElapsedMinutes(sessionStartTime, now);
-	const remainingMinutes = Math.max(0, totalPlannedMinutes - elapsedMinutes);
+	const remainingMinutes = Math.max(0, plannedMinutes + extendedMinutes - elapsedMinutes);
 
-	const isLongSession = elapsedMinutes > LONG_SESSION_THRESHOLD_HOURS * 60;
-
-	const focusSession: FocusSessionInfo = {
+	return {
 		sessionStartTime: lastSessionStart.timestamp,
 		plannedMinutes,
 		elapsedMinutes,
 		remainingMinutes,
 		extendedMinutes,
 	};
-
-	return createFocusRunningState(
-		moduleType,
-		focusSession,
-		todayEarnedMin,
-		todayFocusTotalMin,
-		setting.config?.defaultSessionMin ?? 10,
-		isLongSession,
-	);
 }
 
 function calculateDistances(
@@ -274,169 +380,6 @@ function calculateDistances(
 	}
 
 	return { todayEarnedMin, todayLostMin };
-}
-
-function createDisabledState(moduleType: ModuleType): ModuleState {
-	return {
-		moduleType,
-		status: "DISABLED",
-		todayEarnedMin: 0,
-		todayLostMin: 0,
-		todayNetMin: 0,
-		todayActionCount: 0,
-		todayFocusTotalMin: 0,
-		ctaPrimary: { key: "LOG_ACTION", enabled: false },
-	};
-}
-
-function createNoBaselineState(
-	moduleType: ModuleType,
-	targetIntervalMin: number,
-	earnedMin: number,
-	lostMin: number,
-	netMin: number,
-	actionCount: number,
-	dailyGoalCount?: number,
-): ModuleState {
-	return {
-		moduleType,
-		status: "NO_BASELINE",
-		targetIntervalMin,
-		todayEarnedMin: earnedMin,
-		todayLostMin: lostMin,
-		todayNetMin: netMin,
-		todayActionCount: actionCount,
-		todayFocusTotalMin: 0,
-		dailyGoalCount,
-		ctaPrimary: { key: "LOG_ACTION", enabled: true },
-	};
-}
-
-function createGapDetectedState(
-	moduleType: ModuleType,
-	lastActionTime: string,
-	targetIntervalMin: number,
-	earnedMin: number,
-	lostMin: number,
-	netMin: number,
-	actionCount: number,
-	dailyGoalCount?: number,
-): ModuleState {
-	return {
-		moduleType,
-		status: "GAP_DETECTED",
-		lastActionTime,
-		targetIntervalMin,
-		todayEarnedMin: earnedMin,
-		todayLostMin: lostMin,
-		todayNetMin: netMin,
-		todayActionCount: actionCount,
-		todayFocusTotalMin: 0,
-		dailyGoalCount,
-		ctaPrimary: { key: "RECOVER", enabled: true },
-	};
-}
-
-function createCountdownState(
-	moduleType: ModuleType,
-	lastActionTime: string,
-	targetIntervalMin: number,
-	targetTime: Date,
-	remainingMin: number,
-	actualIntervalMin: number,
-	earnedMin: number,
-	lostMin: number,
-	netMin: number,
-	actionCount: number,
-	dailyGoalCount?: number,
-): ModuleState {
-	return {
-		moduleType,
-		status: "COUNTDOWN",
-		lastActionTime,
-		targetIntervalMin,
-		targetTime: targetTime.toISOString(),
-		remainingMin,
-		actualIntervalMin,
-		todayEarnedMin: earnedMin,
-		todayLostMin: lostMin,
-		todayNetMin: netMin,
-		todayActionCount: actionCount,
-		todayFocusTotalMin: 0,
-		dailyGoalCount,
-		ctaPrimary: { key: "URGE", enabled: true },
-	};
-}
-
-function createReadyState(
-	moduleType: ModuleType,
-	lastActionTime: string,
-	targetIntervalMin: number,
-	targetTime: Date,
-	actualIntervalMin: number,
-	earnedMin: number,
-	lostMin: number,
-	netMin: number,
-	actionCount: number,
-	dailyGoalCount?: number,
-): ModuleState {
-	return {
-		moduleType,
-		status: "READY",
-		lastActionTime,
-		targetIntervalMin,
-		targetTime: targetTime.toISOString(),
-		remainingMin: 0,
-		actualIntervalMin,
-		todayEarnedMin: earnedMin,
-		todayLostMin: lostMin,
-		todayNetMin: netMin,
-		todayActionCount: actionCount,
-		todayFocusTotalMin: 0,
-		dailyGoalCount,
-		ctaPrimary: { key: "LOG_ACTION", enabled: true },
-	};
-}
-
-function createFocusIdleState(
-	moduleType: ModuleType,
-	defaultSessionMin: number,
-	earnedMin: number,
-	focusTotalMin: number,
-): ModuleState {
-	return {
-		moduleType,
-		status: "FOCUS_IDLE",
-		todayEarnedMin: earnedMin,
-		todayLostMin: 0,
-		todayNetMin: earnedMin,
-		todayActionCount: 0,
-		todayFocusTotalMin: focusTotalMin,
-		defaultSessionMin,
-		ctaPrimary: { key: "START_SESSION", enabled: true },
-	};
-}
-
-function createFocusRunningState(
-	moduleType: ModuleType,
-	focusSession: FocusSessionInfo,
-	earnedMin: number,
-	focusTotalMin: number,
-	defaultSessionMin: number,
-	isLongSession: boolean,
-): ModuleState {
-	return {
-		moduleType,
-		status: "FOCUS_RUNNING",
-		todayEarnedMin: earnedMin,
-		todayLostMin: 0,
-		todayNetMin: earnedMin,
-		todayActionCount: 0,
-		todayFocusTotalMin: focusTotalMin,
-		defaultSessionMin,
-		focusSession,
-		ctaPrimary: { key: isLongSession ? "END_SESSION" : "URGE_INTERRUPT", enabled: true },
-	};
 }
 
 interface CalculateTodaySummaryInput {
