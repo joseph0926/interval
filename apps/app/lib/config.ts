@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 function getBaseUrl(): string {
-	if (__DEV__) {
+	if (!__DEV__) {
 		return "https://interval-web.vercel.app";
 	}
 

@@ -1,10 +1,10 @@
 import { useRef, useCallback, useMemo, useState } from "react";
 import { View, ActivityIndicator, Animated, StyleSheet } from "react-native";
-import { WebView, WebViewMessageEvent } from "react-native-webview";
+import { WebView } from "react-native-webview";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession } from "@/hooks/useSession";
-import { useBridge, parseBridgeMessage } from "@/lib/bridge";
+import { useWebViewSetup } from "@/hooks/useWebViewSetup";
 import { CONFIG } from "@/lib/config";
 import { COLORS } from "@/lib/theme";
 import { WEBVIEW_PROPS, webViewStyles, createInjectedScript } from "@/lib/webview-config";
@@ -14,10 +14,8 @@ interface WebViewScreenProps {
 }
 
 export function WebViewScreen({ path }: WebViewScreenProps) {
-	const webViewRef = useRef<WebView>(null);
 	const insets = useSafeAreaInsets();
 	const { sessionId } = useSession();
-	const { handleMessage } = useBridge(webViewRef);
 
 	const uri = `${CONFIG.BASE_URL}${path}`;
 
@@ -36,6 +34,16 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 		}).start(() => setOverlayHidden(true));
 	}, [overlayOpacity]);
 
+	const { webViewRef, onMessage, onError } = useWebViewSetup({
+		onCustomMessage: (raw) => {
+			if (raw === "WEB_READY") {
+				fadeOutOverlay();
+				return true;
+			}
+			return false;
+		},
+	});
+
 	const injectedJS = useMemo(
 		() =>
 			createInjectedScript({
@@ -46,31 +54,16 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 		[sessionId, insets],
 	);
 
-	const onMessage = useCallback(
-		(event: WebViewMessageEvent) => {
-			const raw = event.nativeEvent.data;
-
-			if (raw === "WEB_READY") {
-				fadeOutOverlay();
-				return;
-			}
-
-			const message = parseBridgeMessage(raw);
-			if (message) handleMessage(message);
-		},
-		[handleMessage, fadeOutOverlay],
-	);
-
 	const onLoadEnd = useCallback(() => {
-		setTimeout(() => fadeOutOverlay(), 50);
+		setTimeout(() => fadeOutOverlay(), 500);
 	}, [fadeOutOverlay]);
 
-	const onError = useCallback(
+	const handleError = useCallback(
 		(syntheticEvent: { nativeEvent: { description?: string } }) => {
-			console.error("WebView error:", syntheticEvent.nativeEvent);
+			onError(syntheticEvent);
 			fadeOutOverlay();
 		},
-		[fadeOutOverlay],
+		[onError, fadeOutOverlay],
 	);
 
 	return (
@@ -87,7 +80,7 @@ export function WebViewScreen({ path }: WebViewScreenProps) {
 					onMessage={onMessage}
 					onLoadEnd={onLoadEnd}
 					allowsBackForwardNavigationGestures
-					onError={onError}
+					onError={handleError}
 					{...WEBVIEW_PROPS}
 				/>
 				{!overlayHidden && (

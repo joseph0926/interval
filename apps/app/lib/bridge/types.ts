@@ -83,10 +83,39 @@ export type BridgeMessage =
 	| HapticFeedbackMessage
 	| OnboardingCompleteMessage;
 
-export type BridgeResponseMessage = {
-	action: string;
-	payload?: Record<string, unknown>;
+export type NotificationPermissionResultMessage = {
+	action: typeof BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_PERMISSION_RESULT;
+	payload: { granted: boolean };
 };
+
+export type NotificationStatusMessage = {
+	action: typeof BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_STATUS;
+	payload: { granted: boolean };
+};
+
+export type NotificationScheduledMessage = {
+	action: typeof BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_SCHEDULED;
+	payload:
+		| { success: true; id: string; type: "TARGET_TIME" | "DELAY_REMINDER" }
+		| { success: false; error: string };
+};
+
+export type NotificationsCancelledMessage = {
+	action: typeof BRIDGE_RESPONSE_ACTIONS.NOTIFICATIONS_CANCELLED;
+	payload?: undefined;
+};
+
+export type SmokingRecordedAckMessage = {
+	action: typeof BRIDGE_RESPONSE_ACTIONS.SMOKING_RECORDED_ACK;
+	payload: { success: boolean };
+};
+
+export type BridgeResponseMessage =
+	| NotificationPermissionResultMessage
+	| NotificationStatusMessage
+	| NotificationScheduledMessage
+	| NotificationsCancelledMessage
+	| SmokingRecordedAckMessage;
 
 export function isValidBridgeMessage(data: unknown): data is BridgeMessage {
 	if (typeof data !== "object" || data === null) {

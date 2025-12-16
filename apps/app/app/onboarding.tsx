@@ -1,18 +1,17 @@
-import { useRef, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { WebView, WebViewMessageEvent } from "react-native-webview";
+import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useSession } from "@/hooks/useSession";
-import { useBridge, parseBridgeMessage, BRIDGE_ACTIONS } from "@/lib/bridge";
+import { useWebViewSetup } from "@/hooks/useWebViewSetup";
+import { BRIDGE_ACTIONS } from "@/lib/bridge";
 import { CONFIG } from "@/lib/config";
 import { COLORS } from "@/lib/theme";
 import { WEBVIEW_PROPS, webViewStyles, createOnboardingInjectedScript } from "@/lib/webview-config";
 
 export default function OnboardingScreen() {
-	const webViewRef = useRef<WebView>(null);
 	const { createSession } = useSession();
-	const { handleMessage } = useBridge(webViewRef);
 
 	const uri = `${CONFIG.BASE_URL}/onboarding`;
 
@@ -23,22 +22,15 @@ export default function OnboardingScreen() {
 		router.replace("/");
 	}, [createSession]);
 
-	const onMessage = useCallback(
-		async (event: WebViewMessageEvent) => {
-			const message = parseBridgeMessage(event.nativeEvent.data);
-			if (!message) {
-				return;
-			}
-
+	const { webViewRef, onMessage, onError } = useWebViewSetup({
+		onBridgeMessage: (message) => {
 			if (message.action === BRIDGE_ACTIONS.ONBOARDING_COMPLETE) {
-				await handleOnboardingComplete();
-				return;
+				handleOnboardingComplete();
+				return true;
 			}
-
-			handleMessage(message);
+			return false;
 		},
-		[handleMessage, handleOnboardingComplete],
-	);
+	});
 
 	const onNavigationStateChange = useCallback(
 		async (navState: { url: string }) => {
@@ -65,10 +57,6 @@ export default function OnboardingScreen() {
 		),
 		[],
 	);
-
-	const onError = useCallback((syntheticEvent: { nativeEvent: { description?: string } }) => {
-		console.error("WebView error:", syntheticEvent.nativeEvent);
-	}, []);
 
 	return (
 		<SafeAreaView style={webViewStyles.container} edges={["top", "bottom"]}>

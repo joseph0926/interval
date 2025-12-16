@@ -7,15 +7,15 @@ import {
 	BRIDGE_ACTIONS,
 	BRIDGE_RESPONSE_ACTIONS,
 } from "./types";
-import {
-	requestNotificationPermission,
-	getNotificationPermissionStatus,
-	scheduleTargetTimeNotification,
-	scheduleDelayReminderNotification,
-	cancelAllNotifications,
-	cancelNotification,
-} from "../notifications";
+import { cancelAllNotifications, cancelNotification } from "../notifications";
 import { triggerHaptic } from "../haptics";
+import {
+	handleRequestPermission,
+	handleGetNotificationStatus,
+	handleScheduleTargetNotification,
+	handleScheduleDelayNotification,
+	handleSmokingRecorded,
+} from "./handlers";
 
 export * from "./types";
 
@@ -86,92 +86,4 @@ export function useBridge(webViewRef: RefObject<WebView | null>) {
 	);
 
 	return { handleMessage, sendToWeb };
-}
-
-async function handleRequestPermission(sendToWeb: (message: BridgeResponseMessage) => void) {
-	const granted = await requestNotificationPermission();
-	sendToWeb({
-		action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_PERMISSION_RESULT,
-		payload: { granted },
-	});
-}
-
-async function handleGetNotificationStatus(sendToWeb: (message: BridgeResponseMessage) => void) {
-	const granted = await getNotificationPermissionStatus();
-	sendToWeb({
-		action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_STATUS,
-		payload: { granted },
-	});
-}
-
-async function handleScheduleTargetNotification(
-	payload: { targetTime: string; motivation?: string },
-	sendToWeb: (message: BridgeResponseMessage) => void,
-) {
-	const targetTime = new Date(payload.targetTime);
-
-	if (isNaN(targetTime.getTime())) {
-		sendToWeb({
-			action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_SCHEDULED,
-			payload: { success: false, error: "Invalid targetTime format" },
-		});
-		return;
-	}
-
-	const notificationId = await scheduleTargetTimeNotification(targetTime, payload.motivation);
-
-	sendToWeb({
-		action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_SCHEDULED,
-		payload: {
-			success: !!notificationId,
-			id: notificationId,
-			type: "TARGET_TIME",
-		},
-	});
-}
-
-async function handleScheduleDelayNotification(
-	payload: { delayEndTime: string },
-	sendToWeb: (message: BridgeResponseMessage) => void,
-) {
-	const delayEndTime = new Date(payload.delayEndTime);
-
-	if (isNaN(delayEndTime.getTime())) {
-		sendToWeb({
-			action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_SCHEDULED,
-			payload: { success: false, error: "Invalid delayEndTime format" },
-		});
-		return;
-	}
-
-	const notificationId = await scheduleDelayReminderNotification(delayEndTime);
-
-	sendToWeb({
-		action: BRIDGE_RESPONSE_ACTIONS.NOTIFICATION_SCHEDULED,
-		payload: {
-			success: !!notificationId,
-			id: notificationId,
-			type: "DELAY_REMINDER",
-		},
-	});
-}
-
-async function handleSmokingRecorded(
-	payload: { nextTargetTime?: string; motivation?: string } | undefined,
-	sendToWeb: (message: BridgeResponseMessage) => void,
-) {
-	await cancelAllNotifications();
-
-	if (payload?.nextTargetTime) {
-		const targetTime = new Date(payload.nextTargetTime);
-
-		if (!isNaN(targetTime.getTime())) {
-			await scheduleTargetTimeNotification(targetTime, payload.motivation);
-		}
-	}
-
-	sendToWeb({
-		action: BRIDGE_RESPONSE_ACTIONS.SMOKING_RECORDED_ACK,
-		payload: { success: true },
-	});
 }
