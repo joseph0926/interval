@@ -6,8 +6,8 @@
 | ------------------ | ----------------------------------- |
 | 앱 이름            | 간격                                |
 | 영문명             | Interval                            |
-| 패키지명 (Android) | com.intervalapp.habit               |
-| Bundle ID (iOS)    | com.intervalapp.habit               |
+| 패키지명 (Android) | com.interval.habit                  |
+| Bundle ID (iOS)    | com.interval.habit                  |
 | 카테고리           | 건강 및 피트니스 (Health & Fitness) |
 | 연령 등급          | 4+ (전연령)                         |
 

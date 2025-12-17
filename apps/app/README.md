@@ -166,8 +166,8 @@ eas submit --platform android
 
 ## 앱 정보
 
-| 항목              | 값                    |
-| ----------------- | --------------------- |
-| Package (Android) | com.intervalapp.habit |
-| Bundle ID (iOS)   | com.intervalapp.habit |
-| Version           | 1.0.2                 |
+| 항목              | 값                 |
+| ----------------- | ------------------ |
+| Package (Android) | com.interval.habit |
+| Bundle ID (iOS)   | com.interval.habit |
+| Version           | 1.0.2              |

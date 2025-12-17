@@ -3,7 +3,7 @@
 		"name": "간격",
 		"slug": "interval-app",
 		"description": "지금 당장 말고, 조금 있다가",
-		"version": "1.1.0",
+		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "interval",
@@ -18,7 +18,7 @@
 		},
 		"ios": {
 			"supportsTablet": false,
-			"bundleIdentifier": "com.intervalapp.habit",
+			"bundleIdentifier": "com.interval.habit",
 			"buildNumber": "1",
 			"infoPlist": {
 				"CFBundleDisplayName": "간격",
@@ -30,8 +30,8 @@
 				"foregroundImage": "./assets/images/adaptive-icon.png",
 				"backgroundColor": "#000000"
 			},
-			"package": "com.intervalapp.habit",
-			"versionCode": 4,
+			"package": "com.interval.habit",
+			"versionCode": 1,
 			"permissions": [
 				"android.permission.SCHEDULE_EXACT_ALARM",
 				"android.permission.POST_NOTIFICATIONS"
