@@ -106,61 +106,61 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
-  deploy:
-    needs: [security-scan]
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
+  # deploy:
+  #   needs: [security-scan]
+  #   runs-on: ubuntu-latest
+  #   concurrency:
+  #     group: deploy-production
+  #     cancel-in-progress: false
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Setup Fly.io CLI
-        uses: superfly/flyctl-actions/setup-flyctl@master
+  #     - name: Setup Fly.io CLI
+  #       uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Generate deployment info
-        id: info
-        run: |
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "timestamp=$(date +'%Y-%m-%d %H:%M:%S KST' -d '+9 hours')" >> $GITHUB_OUTPUT
+  #     - name: Generate deployment info
+  #       id: info
+  #       run: |
+  #         SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+  #         echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+  #         echo "timestamp=$(date +'%Y-%m-%d %H:%M:%S KST' -d '+9 hours')" >> $GITHUB_OUTPUT
 
-      - name: Deploy to Fly.io
-        run: |
-          flyctl deploy \
-            --remote-only \
-            --config apps/server/fly.toml \
-            --strategy immediate
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  #     - name: Deploy to Fly.io
+  #       run: |
+  #         flyctl deploy \
+  #           --remote-only \
+  #           --config apps/server/fly.toml \
+  #           --strategy immediate
+  #       env:
+  #         FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Verify deployment
-        run: |
-          echo "Waiting for deployment stabilization..."
-          sleep 20
+  #     - name: Verify deployment
+  #       run: |
+  #         echo "Waiting for deployment stabilization..."
+  #         sleep 20
 
-          for i in {1..5}; do
-            if curl -sf https://interval.fly.dev/api/health; then
-              echo "Health check passed!"
-              exit 0
-            fi
-            echo "Attempt $i/5 failed, retrying in 10s..."
-            sleep 10
-          done
+  #         for i in {1..5}; do
+  #           if curl -sf https://interval.fly.dev/api/health; then
+  #             echo "Health check passed!"
+  #             exit 0
+  #           fi
+  #           echo "Attempt $i/5 failed, retrying in 10s..."
+  #           sleep 10
+  #         done
 
-          echo "Health check failed"
-          exit 1
+  #         echo "Health check failed"
+  #         exit 1
 
-      - name: Deployment summary
-        if: always()
-        run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **App** | ${{ env.FLY_APP }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | \`${{ steps.info.outputs.short_sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Time** | ${{ steps.info.outputs.timestamp }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Status** | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **URL** | https://interval.fly.dev |" >> $GITHUB_STEP_SUMMARY
+  #     - name: Deployment summary
+  #       if: always()
+  #       run: |
+  #         echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+  #         echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **App** | ${{ env.FLY_APP }} |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Commit** | \`${{ steps.info.outputs.short_sha }}\` |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Time** | ${{ steps.info.outputs.timestamp }} |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Status** | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **URL** | https://interval.fly.dev |" >> $GITHUB_STEP_SUMMARY
