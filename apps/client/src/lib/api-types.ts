@@ -1,24 +1,131 @@
-export type {
-	ModuleType as EngineModuleType,
-	ModuleStatus as EngineModuleStatus,
-	ModuleState as EngineModuleState,
-	TodaySummary as EngineTodaySummary,
-	IntegratedSummary as EngineIntegratedSummary,
-	ReasonLabel as EngineReasonLabel,
-	TriggerContext as EngineTriggerContext,
-	FloatingSuggestion as EngineFloatingSuggestion,
-	FocusSessionInfo as EngineFocusSessionInfo,
-	ActionKind as EngineActionKind,
-	SessionEndReason as EngineSessionEndReason,
-	CtaKey as EngineCtaKey,
-	CtaPrimary as EngineCtaPrimary,
-	IntervalEvent as EngineIntervalEvent,
-	ModuleConfig as EngineModuleConfig,
-	ModuleSetting as EngineModuleSetting,
-	UserEngineSettings as EngineSettings,
-	WeeklyModuleReport as EngineWeeklyModuleReport,
-	WeeklyReport as EngineWeeklyReport,
-} from "@interval/engine";
+// Legacy: @interval/engine types - will be replaced with @pause/engine
+export type EngineModuleType = "SMOKE" | "SNS" | "CAFFEINE" | "FOCUS";
+export type EngineModuleStatus =
+	| "DISABLED"
+	| "SETUP_REQUIRED"
+	| "NO_BASELINE"
+	| "COUNTDOWN"
+	| "READY"
+	| "GAP_DETECTED"
+	| "FOCUS_IDLE"
+	| "FOCUS_RUNNING"
+	| "FOCUS_COACHING";
+export type EngineReasonLabel = "BREAK" | "BORED" | "STRESS" | "HABIT" | "AVOID" | "LINK" | "OTHER";
+export type EngineTriggerContext = "EARLY_URGE" | "FLOATING_CARD" | "FOCUS_EXTEND" | "MANUAL";
+export type EngineActionKind = "CONSUME_OR_OPEN" | "SESSION_START" | "SESSION_END";
+export type EngineSessionEndReason = "USER_END" | "URGE" | "AUTO";
+export type EngineCtaKey =
+	| "LOG_ACTION"
+	| "URGE"
+	| "RECOVER"
+	| "START_SESSION"
+	| "END_SESSION"
+	| "URGE_INTERRUPT";
+
+export interface EngineCtaPrimary {
+	key: EngineCtaKey;
+	enabled: boolean;
+}
+
+export interface EngineFocusSessionInfo {
+	sessionStartTime: string;
+	plannedMinutes: number;
+	elapsedMinutes: number;
+	remainingMinutes: number;
+	extendedMinutes: number;
+}
+
+export interface EngineModuleState {
+	moduleType: EngineModuleType;
+	status: EngineModuleStatus;
+	lastActionTime?: string;
+	targetIntervalMin?: number;
+	targetTime?: string;
+	remainingMin?: number;
+	actualIntervalMin?: number;
+	todayEarnedMin: number;
+	todayLostMin: number;
+	todayNetMin: number;
+	ctaPrimary: EngineCtaPrimary;
+	focusSession?: EngineFocusSessionInfo;
+	todayActionCount: number;
+	todayFocusTotalMin: number;
+	dailyGoalCount?: number;
+	defaultSessionMin?: number;
+}
+
+export interface EngineIntegratedSummary {
+	earnedMin: number;
+	lostMin: number;
+	netMin: number;
+	level?: number;
+	nextLevelRemainingMin?: number;
+}
+
+export interface EngineFloatingSuggestion {
+	moduleType: EngineModuleType;
+	remainingMin: number;
+	options: Array<1 | 3>;
+}
+
+export interface EngineTodaySummary {
+	dayKey: string;
+	integrated: EngineIntegratedSummary;
+	modules: EngineModuleState[];
+	floatingSuggestion?: EngineFloatingSuggestion;
+}
+
+export interface EngineIntervalEvent {
+	id: string;
+	userId: string;
+	moduleType: EngineModuleType;
+	eventType: "ACTION" | "DELAY" | "ADJUSTMENT";
+	timestamp: string;
+	localDayKey: string;
+	actionKind?: EngineActionKind;
+	delayMinutes?: number;
+	reasonLabel?: EngineReasonLabel;
+	triggerContext?: EngineTriggerContext;
+	payload?: Record<string, unknown>;
+}
+
+export interface EngineModuleConfig {
+	dailyGoalCount?: number;
+	defaultSessionMin?: number;
+}
+
+export interface EngineModuleSetting {
+	moduleType: EngineModuleType;
+	enabled: boolean;
+	targetIntervalMin: number;
+	config?: EngineModuleConfig;
+}
+
+export interface EngineSettings {
+	dayAnchorMinutes: number;
+	modules: EngineModuleSetting[];
+}
+
+export interface EngineWeeklyModuleReport {
+	moduleType: EngineModuleType;
+	earnedMin: number;
+	lostMin: number;
+	netMin: number;
+	avgIntervalMin?: number;
+	actionCount: number;
+	focusTotalMin: number;
+	avgSessionMin?: number;
+}
+
+export interface EngineWeeklyReport {
+	weekStartDayKey: string;
+	integrated: {
+		earnedMin: number;
+		lostMin: number;
+		netMin: number;
+	};
+	modules: EngineWeeklyModuleReport[];
+}
 
 export type DailySmokingRange = "UNDER_5" | "FROM_5_10" | "FROM_10_20" | "OVER_20" | "UNKNOWN";
 export type RecordType = "FIRST" | "NORMAL" | "EARLY";

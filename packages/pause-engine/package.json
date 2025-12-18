@@ -1,5 +1,5 @@
 {
-	"name": "@interval/engine",
+	"name": "@pause/engine",
 	"version": "1.0.0",
 	"type": "module",
 	"exports": {

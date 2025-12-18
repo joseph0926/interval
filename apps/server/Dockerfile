@@ -26,17 +26,17 @@ RUN apt-get update -qq && \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 COPY apps/server/package.json ./apps/server/
-COPY packages/interval-engine/package.json ./packages/interval-engine/
+COPY packages/pause-engine/package.json ./packages/pause-engine/
 
 RUN pnpm install --frozen-lockfile
 
 COPY apps/server/prisma ./apps/server/prisma/
 RUN pnpm --filter @interval/server exec prisma generate
 
-COPY packages/interval-engine ./packages/interval-engine/
+COPY packages/pause-engine ./packages/pause-engine/
 COPY apps/server ./apps/server/
 
-RUN pnpm --filter @interval/engine build
+RUN pnpm --filter @pause/engine build
 RUN pnpm --filter @interval/server build
 
 RUN pnpm --filter @interval/server deploy --prod --legacy /app/deploy

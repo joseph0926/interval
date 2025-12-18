@@ -62,6 +62,18 @@ export function getWeekStartDayKey(dayKey: string): string {
 	return `${y}-${m}-${d}`;
 }
 
+export function getWeekEndDayKey(dayKey: string): string {
+	const weekStart = getWeekStartDayKey(dayKey);
+	const [year, month, day] = weekStart.split("-").map(Number);
+	const date = new Date(year, month - 1, day);
+	date.setDate(date.getDate() + 6);
+
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
+}
+
 export function getWeekDayKeys(weekStartDayKey: string): string[] {
 	const [year, month, day] = weekStartDayKey.split("-").map(Number);
 	const startDate = new Date(year, month - 1, day);
@@ -77,4 +89,8 @@ export function getWeekDayKeys(weekStartDayKey: string): string[] {
 	}
 
 	return dayKeys;
+}
+
+export function getTodayDayKey(dayAnchorMinutes: number = 240): string {
+	return getLocalDayKey(new Date(), dayAnchorMinutes);
 }

@@ -146,9 +146,9 @@ importers:
       '@firsttx/tx':
         specifier: ^0.6.0
         version: 0.6.0(react@19.1.0)
-      '@interval/engine':
+      '@pause/engine':
         specifier: workspace:*
-        version: link:../../packages/interval-engine
+        version: link:../../packages/pause-engine
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -267,9 +267,9 @@ importers:
       '@fastify/session':
         specifier: ^11.1.1
         version: 11.1.1
-      '@interval/engine':
+      '@pause/engine':
         specifier: workspace:*
-        version: link:../../packages/interval-engine
+        version: link:../../packages/pause-engine
       '@prisma/adapter-pg':
         specifier: ^7.1.0
         version: 7.1.0
@@ -305,7 +305,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/interval-engine:
+  packages/pause-engine:
     dependencies:
       zod:
         specifier: ^4.1.13

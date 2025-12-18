@@ -14,12 +14,6 @@ export type {
 } from "@/lib/api-types";
 
 import type { EngineModuleType } from "@/lib/api-types";
-export {
-	INTERVAL_MODULES,
-	SESSION_MODULES,
-	isIntervalModule,
-	isSessionModule,
-} from "@interval/engine";
 
 export type ModuleCardState =
 	| { type: "NO_BASELINE" }
