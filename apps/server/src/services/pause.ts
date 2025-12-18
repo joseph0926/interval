@@ -1,38 +1,19 @@
 import { prisma } from "../lib/prisma.js";
+import {
+	getLocalDayKey,
+	getWeekStartDayKey,
+	getWeekDayKeys,
+	calculateTodaySummary as engineCalculateTodaySummary,
+	calculateWeeklyReport as engineCalculateWeeklyReport,
+	type PauseEvent as EnginePauseEvent,
+	type WeeklyReport,
+} from "@pause/engine";
 import type {
 	CreatePauseStartInput,
 	CreatePauseEndInput,
 	PauseTodaySummary,
-	ModuleSummary,
 	UrgeType,
 } from "../types/index.js";
-
-function getLocalDayKey(date: Date, dayAnchorMinutes: number): string {
-	const totalMinutes = date.getHours() * 60 + date.getMinutes();
-	const adjusted = new Date(date);
-
-	if (totalMinutes < dayAnchorMinutes) {
-		adjusted.setDate(adjusted.getDate() - 1);
-	}
-
-	return adjusted.toISOString().split("T")[0];
-}
-
-function createEmptyModuleSummary(): ModuleSummary {
-	return {
-		totalUrges: 0,
-		pauseAttempts: 0,
-		pauseCompleted: 0,
-		pauseGaveIn: 0,
-		pauseCancelled: 0,
-		successRate: 0,
-	};
-}
-
-function calculateSuccessRate(completed: number, total: number): number {
-	if (total === 0) return 0;
-	return Math.round((completed / total) * 1000) / 10;
-}
 
 export async function getUserSettings(userId: string) {
 	const user = await prisma.user.findUnique({
@@ -113,67 +94,62 @@ export async function getTodaySummary(userId: string): Promise<PauseTodaySummary
 		orderBy: { timestamp: "asc" },
 	});
 
-	const pauseEndEvents = events.filter((e) => e.eventType === "PAUSE_END");
-	const smokePauseEnd = pauseEndEvents.filter((e) => e.urgeType === "SMOKE");
-	const snsPauseEnd = pauseEndEvents.filter((e) => e.urgeType === "SNS");
-
-	const calculateModuleSummary = (moduleEvents: typeof pauseEndEvents): ModuleSummary => {
-		const total = moduleEvents.length;
-		const completed = moduleEvents.filter((e) => e.result === "COMPLETED").length;
-		const gaveIn = moduleEvents.filter((e) => e.result === "GAVE_IN").length;
-		const cancelled = moduleEvents.filter((e) => e.result === "CANCELLED").length;
-
-		return {
-			totalUrges: 0,
-			pauseAttempts: total,
-			pauseCompleted: completed,
-			pauseGaveIn: gaveIn,
-			pauseCancelled: cancelled,
-			successRate: calculateSuccessRate(completed, total),
-		};
-	};
-
-	const totalPauseAttempts = pauseEndEvents.length;
-	const totalCompleted = pauseEndEvents.filter((e) => e.result === "COMPLETED").length;
-	const totalGaveIn = pauseEndEvents.filter((e) => e.result === "GAVE_IN").length;
-
-	const currentStreak = calculateCurrentStreak(pauseEndEvents);
-
-	const lastEvent = events[events.length - 1];
+	const engineEvents = events.map(mapPrismaEventToEngine);
+	const summary = engineCalculateTodaySummary(engineEvents, dayKey, settings.dayAnchorMinutes);
 
 	return {
-		dayKey,
-		totalUrges: events.filter((e) => e.eventType === "URGE").length,
-		pauseAttempts: totalPauseAttempts,
-		pauseCompleted: totalCompleted,
-		pauseGaveIn: totalGaveIn,
-		successRate: calculateSuccessRate(totalCompleted, totalPauseAttempts),
-		currentStreak,
-		byType: {
-			SMOKE:
-				smokePauseEnd.length > 0
-					? calculateModuleSummary(smokePauseEnd)
-					: createEmptyModuleSummary(),
-			SNS:
-				snsPauseEnd.length > 0 ? calculateModuleSummary(snsPauseEnd) : createEmptyModuleSummary(),
-		},
-		lastEventAt: lastEvent?.timestamp.toISOString() ?? null,
+		...summary,
+		lastEventAt: summary.lastEventAt?.toISOString() ?? null,
 	};
 }
 
-function calculateCurrentStreak(
-	pauseEndEvents: Array<{ result: string | null; timestamp: Date }>,
-): number {
-	const sorted = [...pauseEndEvents].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+export async function getWeeklyReport(userId: string, weekStart?: string): Promise<WeeklyReport> {
+	const settings = await getUserSettings(userId);
+	const now = new Date();
+	const currentDayKey = getLocalDayKey(now, settings.dayAnchorMinutes);
+	const weekStartKey = weekStart ?? getWeekStartDayKey(currentDayKey);
+	const weekDayKeys = getWeekDayKeys(weekStartKey);
 
-	let streak = 0;
-	for (const event of sorted) {
-		if (event.result === "COMPLETED") {
-			streak++;
-		} else {
-			break;
-		}
-	}
+	const events = await prisma.pauseEvent.findMany({
+		where: {
+			userId,
+			localDayKey: { in: weekDayKeys },
+		},
+		orderBy: { timestamp: "asc" },
+	});
 
-	return streak;
+	const engineEvents = events.map(mapPrismaEventToEngine);
+	return engineCalculateWeeklyReport(engineEvents, weekStartKey, settings.dayAnchorMinutes);
+}
+
+function mapPrismaEventToEngine(event: {
+	id: string;
+	userId: string;
+	urgeType: string;
+	eventType: string;
+	pauseDuration: number | null;
+	result: string | null;
+	triggerSource: string | null;
+	snsAppName: string | null;
+	timestamp: Date;
+	localDayKey: string;
+	pauseStartEventId: string | null;
+	metadata: unknown;
+	createdAt: Date;
+}): EnginePauseEvent {
+	return {
+		id: event.id,
+		userId: event.userId,
+		urgeType: event.urgeType as "SMOKE" | "SNS",
+		eventType: event.eventType as "URGE" | "PAUSE_START" | "PAUSE_END",
+		pauseDuration: event.pauseDuration ?? undefined,
+		result: event.result as "COMPLETED" | "GAVE_IN" | "CANCELLED" | undefined,
+		triggerSource: event.triggerSource as "MANUAL" | "WIDGET" | "SHORTCUT" | undefined,
+		snsAppName: event.snsAppName ?? undefined,
+		timestamp: event.timestamp,
+		localDayKey: event.localDayKey,
+		pauseStartEventId: event.pauseStartEventId ?? undefined,
+		metadata: event.metadata as Record<string, unknown> | undefined,
+		createdAt: event.createdAt,
+	};
 }

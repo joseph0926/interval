@@ -1,7 +1,12 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth } from "../hooks/auth.js";
-import { createPauseStart, createPauseEnd, getTodaySummary } from "../services/pause.js";
+import {
+	createPauseStart,
+	createPauseEnd,
+	getTodaySummary,
+	getWeeklyReport,
+} from "../services/pause.js";
 
 const UrgeTypeSchema = z.enum(["SMOKE", "SNS"]);
 const TriggerSourceSchema = z.enum(["MANUAL", "WIDGET", "SHORTCUT"]);
@@ -64,5 +69,20 @@ export const pauseRoutes: FastifyPluginAsync = async (app) => {
 		const summary = await getTodaySummary(userId);
 
 		return { success: true, summary };
+	});
+
+	app.get("/week", async (request, reply) => {
+		const userId = request.session.userId!;
+		const query = request.query as { weekStart?: string };
+
+		if (query.weekStart && !/^\d{4}-\d{2}-\d{2}$/.test(query.weekStart)) {
+			return reply
+				.code(400)
+				.send({ success: false, error: "Invalid weekStart format. Use YYYY-MM-DD" });
+		}
+
+		const report = await getWeeklyReport(userId, query.weekStart);
+
+		return { success: true, report };
 	});
 };
