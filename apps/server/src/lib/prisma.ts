@@ -13,4 +13,12 @@ const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({ adapter });
 
-export type { DelayLog, UserBadge, SmokingRecord, User } from "../generated/prisma/client.js";
+export type {
+	DelayLog,
+	UserBadge,
+	SmokingRecord,
+	User,
+	PauseEvent,
+	UserModuleSetting,
+	IntervalEvent,
+} from "../generated/prisma/client.js";

@@ -1,23 +1,16 @@
-import type { UserDto, Settings, DailySmokingRange, JobType, ModuleType } from "../types/index.js";
+import type { UserDto, UserSettings, UrgeType } from "../types/index.js";
 
 interface UserEntity {
 	id: string;
 	isGuest: boolean;
 	nickname: string | null;
 	email: string | null;
-	jobType: string | null;
 	enabledModules: string[];
-	dailySmokingRange: string | null;
-	dayStartTime: string;
-	currentTargetInterval: number;
-	currentMotivation: string | null;
+	dayAnchorMinutes: number;
 	onboardingCompleted: boolean;
-}
-
-interface UserSettingsEntity extends UserEntity {
-	notifyOnTargetTime: boolean;
-	notifyMorningDelay: boolean;
-	notifyDailyReminder: boolean;
+	notificationsEnabled: boolean;
+	dailyReminderEnabled: boolean;
+	dailyReminderTime: string | null;
 }
 
 export function toUserDto(user: UserEntity): UserDto {
@@ -26,25 +19,22 @@ export function toUserDto(user: UserEntity): UserDto {
 		isGuest: user.isGuest,
 		nickname: user.nickname,
 		email: user.email,
-		dailySmokingRange: user.dailySmokingRange as DailySmokingRange | null,
-		dayStartTime: user.dayStartTime,
-		currentTargetInterval: user.currentTargetInterval,
-		currentMotivation: user.currentMotivation,
+		enabledModules: user.enabledModules as UrgeType[],
+		dayAnchorMinutes: user.dayAnchorMinutes,
 		onboardingCompleted: user.onboardingCompleted,
+		notificationsEnabled: user.notificationsEnabled,
+		dailyReminderEnabled: user.dailyReminderEnabled,
+		dailyReminderTime: user.dailyReminderTime,
 	};
 }
 
-export function toSettings(user: UserSettingsEntity): Settings {
+export function toUserSettings(user: UserEntity): UserSettings {
 	return {
 		nickname: user.nickname,
-		jobType: user.jobType as JobType | null,
-		enabledModules: user.enabledModules as ModuleType[],
-		dailySmokingRange: user.dailySmokingRange as DailySmokingRange | null,
-		dayStartTime: user.dayStartTime,
-		currentTargetInterval: user.currentTargetInterval,
-		currentMotivation: user.currentMotivation,
-		notifyOnTargetTime: user.notifyOnTargetTime,
-		notifyMorningDelay: user.notifyMorningDelay,
-		notifyDailyReminder: user.notifyDailyReminder,
+		enabledModules: user.enabledModules as UrgeType[],
+		dayAnchorMinutes: user.dayAnchorMinutes,
+		notificationsEnabled: user.notificationsEnabled,
+		dailyReminderEnabled: user.dailyReminderEnabled,
+		dailyReminderTime: user.dailyReminderTime,
 	};
 }

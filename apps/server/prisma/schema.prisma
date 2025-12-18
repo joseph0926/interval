@@ -10,32 +10,71 @@ datasource db {
 }
 
 model User {
-  id                    String   @id @default(uuid())
-  isGuest               Boolean  @default(true)
-  nickname              String?
-  email                 String?  @unique
-  jobType               String?
-  enabledModules        String[] @default(["SMOKING"])
-  dailySmokingRange     String?
-  dayStartTime          String   @default("04:00")
-  dayAnchorMinutes      Int      @default(240)
-  currentTargetInterval Int      @default(60)
-  currentMotivation     String?
-  onboardingCompleted   Boolean  @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isGuest  Boolean @default(true)
+  email    String? @unique
+  nickname String?
+
+  enabledModules       String[] @default(["SMOKE"])
+  dayAnchorMinutes     Int      @default(240)
+  onboardingCompleted  Boolean  @default(false)
+  notificationsEnabled Boolean  @default(true)
+  dailyReminderEnabled Boolean  @default(false)
+  dailyReminderTime    String?
+
+  pauseEvents    PauseEvent[]
+  moduleSettings UserModuleSetting[]
 
   smokingRecords SmokingRecord[]
   delayLogs      DelayLog[]
   badges         UserBadge[]
-  moduleSettings UserModuleSetting[]
   intervalEvents IntervalEvent[]
 
-  notifyOnTargetTime  Boolean @default(true)
-  notifyMorningDelay  Boolean @default(true)
-  notifyDailyReminder Boolean @default(true)
-
   @@index([email])
+}
+
+model PauseEvent {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  urgeType          String
+  eventType         String
+  pauseDuration     Int?
+  result            String?
+  triggerSource     String?
+  snsAppName        String?
+  timestamp         DateTime
+  localDayKey       String
+  pauseStartEventId String?
+  metadata          Json?
+
+  @@index([userId])
+  @@index([userId, urgeType])
+  @@index([userId, localDayKey])
+  @@index([userId, urgeType, localDayKey])
+}
+
+model UserModuleSetting {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleType      String
+  enabled         Boolean  @default(true)
+  defaultDuration Int      @default(90)
+  trackedApps     String[] @default([])
+  configJson      Json?
+
+  @@unique([userId, moduleType])
+  @@index([userId])
 }
 
 model SmokingRecord {
@@ -80,22 +119,6 @@ model UserBadge {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
-  @@index([userId])
-}
-
-model UserModuleSetting {
-  id                String   @id @default(uuid())
-  userId            String
-  moduleType        String
-  enabled           Boolean  @default(true)
-  targetIntervalMin Int      @default(60)
-  configJson        Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, moduleType])
   @@index([userId])
 }
 

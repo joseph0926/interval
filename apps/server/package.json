@@ -10,6 +10,7 @@
 		"db:gen": "prisma generate",
 		"db:push": "prisma db push",
 		"db:studio": "prisma studio",
+		"db:re": "prisma migrate reset",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {

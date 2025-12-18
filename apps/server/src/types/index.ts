@@ -6,6 +6,96 @@ declare module "@fastify/session" {
 	}
 }
 
+export type UrgeType = "SMOKE" | "SNS";
+export type PauseEventType = "URGE" | "PAUSE_START" | "PAUSE_END";
+export type PauseResult = "COMPLETED" | "GAVE_IN" | "CANCELLED";
+export type TriggerSource = "MANUAL" | "WIDGET" | "SHORTCUT";
+export type PauseDuration = 90 | 180;
+
+export interface UserDto {
+	id: string;
+	isGuest: boolean;
+	nickname: string | null;
+	email?: string | null;
+	enabledModules: UrgeType[];
+	dayAnchorMinutes: number;
+	onboardingCompleted: boolean;
+	notificationsEnabled: boolean;
+	dailyReminderEnabled: boolean;
+	dailyReminderTime: string | null;
+}
+
+export interface UserSettings {
+	nickname: string | null;
+	enabledModules: UrgeType[];
+	dayAnchorMinutes: number;
+	notificationsEnabled: boolean;
+	dailyReminderEnabled: boolean;
+	dailyReminderTime: string | null;
+}
+
+export interface ModuleSettingDto {
+	moduleType: UrgeType;
+	enabled: boolean;
+	defaultDuration: number;
+	trackedApps: string[];
+}
+
+export interface PauseEventDto {
+	id: string;
+	urgeType: UrgeType;
+	eventType: PauseEventType;
+	pauseDuration: number | null;
+	result: PauseResult | null;
+	triggerSource: TriggerSource | null;
+	snsAppName: string | null;
+	timestamp: string;
+	localDayKey: string;
+	pauseStartEventId: string | null;
+}
+
+export interface ModuleSummary {
+	totalUrges: number;
+	pauseAttempts: number;
+	pauseCompleted: number;
+	pauseGaveIn: number;
+	pauseCancelled: number;
+	successRate: number;
+}
+
+export interface PauseTodaySummary {
+	dayKey: string;
+	totalUrges: number;
+	pauseAttempts: number;
+	pauseCompleted: number;
+	pauseGaveIn: number;
+	successRate: number;
+	currentStreak: number;
+	byType: {
+		SMOKE: ModuleSummary;
+		SNS: ModuleSummary;
+	};
+	lastEventAt: string | null;
+}
+
+export interface CreatePauseStartInput {
+	urgeType: UrgeType;
+	pauseDuration: PauseDuration;
+	triggerSource?: TriggerSource;
+	snsAppName?: string;
+}
+
+export interface CreatePauseEndInput {
+	pauseStartEventId: string;
+	result: PauseResult;
+}
+
+export interface OnboardingInput {
+	enabledModules: UrgeType[];
+	nickname?: string;
+	dayAnchorMinutes?: number;
+}
+
 export type DailySmokingRange = "UNDER_5" | "FROM_5_10" | "FROM_10_20" | "OVER_20" | "UNKNOWN";
 export type RecordType = "FIRST" | "NORMAL" | "EARLY";
 export type ReasonCode =
@@ -17,48 +107,10 @@ export type ReasonCode =
 	| "AFTER_MEAL"
 	| "OTHER";
 export type CoachingMode = "NONE" | "LIGHT" | "FULL";
-
 export type JobType = "OFFICE" | "REMOTE" | "SHIFT" | "FIELD" | "OTHER";
-
 export type ModuleType = "SMOKING" | "SNS" | "FOCUS" | "COFFEE";
 
-export interface UserDto {
-	id: string;
-	isGuest: boolean;
-	nickname: string | null;
-	email?: string | null;
-	jobType?: JobType | null;
-	enabledModules?: ModuleType[];
-	dailySmokingRange?: DailySmokingRange | null;
-	dayStartTime?: string;
-	currentTargetInterval?: number;
-	currentMotivation?: string | null;
-	onboardingCompleted?: boolean;
-}
-
-export interface TodaySummary {
-	totalSmoked: number;
-	averageInterval: number | null;
-	totalDelayMinutes: number;
-	targetInterval: number;
-	motivation: string | null;
-	lastSmokedAt: string | null;
-	firstSmokedAt: string | null;
-	nextTargetTime: string | null;
-	earlyCount: number;
-	dayStartTime: string;
-}
-
-export interface SmokingRecord {
-	id: string;
-	smokedAt: string;
-	type: RecordType;
-	intervalFromPrevious: number | null;
-	wasOnTarget: boolean | null;
-	delayedMinutes: number;
-}
-
-export interface Settings {
+export interface LegacySettings {
 	nickname: string | null;
 	jobType: JobType | null;
 	enabledModules: ModuleType[];
@@ -155,7 +207,7 @@ export interface BadgeDefinition {
 	condition: (totalDelayMinutes: number) => boolean;
 }
 
-export interface OnboardingInput {
+export interface LegacyOnboardingInput {
 	jobType?: JobType;
 	enabledModules?: ModuleType[];
 	dailySmokingRange: DailySmokingRange;

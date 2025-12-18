@@ -2,19 +2,18 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../hooks/auth.js";
-import { toSettings } from "../mappers/user.js";
+import { toUserSettings } from "../mappers/user.js";
 
 const updateSettingsSchema = z.object({
 	nickname: z.string().min(1).max(20).optional(),
-	currentTargetInterval: z.number().int().min(1).max(480).optional(),
-	currentMotivation: z.string().max(200).optional().nullable(),
-	dayStartTime: z
+	dayAnchorMinutes: z.number().int().min(0).max(1440).optional(),
+	notificationsEnabled: z.boolean().optional(),
+	dailyReminderEnabled: z.boolean().optional(),
+	dailyReminderTime: z
 		.string()
 		.regex(/^\d{2}:\d{2}$/)
-		.optional(),
-	notifyOnTargetTime: z.boolean().optional(),
-	notifyMorningDelay: z.boolean().optional(),
-	notifyDailyReminder: z.boolean().optional(),
+		.optional()
+		.nullable(),
 });
 
 export const settingsRoutes: FastifyPluginAsync = async (app) => {
@@ -31,7 +30,7 @@ export const settingsRoutes: FastifyPluginAsync = async (app) => {
 			return reply.code(404).send({ success: false, error: "User not found" });
 		}
 
-		return { success: true, settings: toSettings(user) };
+		return { success: true, settings: toUserSettings(user) };
 	});
 
 	app.patch("/", async (request, reply) => {
@@ -47,6 +46,6 @@ export const settingsRoutes: FastifyPluginAsync = async (app) => {
 			data: parsed.data,
 		});
 
-		return { success: true, settings: toSettings(user) };
+		return { success: true, settings: toUserSettings(user) };
 	});
 };

@@ -4,32 +4,21 @@ import { prisma } from "../lib/prisma.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { requireAuth } from "../hooks/auth.js";
 import { toUserDto } from "../mappers/user.js";
-import { ModuleTypeSchema, type ModuleType } from "@interval/engine";
+import type { UrgeType } from "../types/index.js";
+
+const UrgeTypeSchema = z.enum(["SMOKE", "SNS"]);
 
 const ModuleSettingSchema = z.object({
-	moduleType: ModuleTypeSchema,
+	moduleType: UrgeTypeSchema,
 	enabled: z.boolean().default(true),
-	targetIntervalMin: z.number().int().min(1).max(480).optional(),
-	config: z
-		.object({
-			dailyGoalCount: z.number().int().min(1).max(20).optional(),
-			defaultSessionMin: z.number().int().min(5).max(120).optional(),
-		})
-		.optional(),
+	defaultDuration: z.number().int().min(60).max(300).optional(),
+	trackedApps: z.array(z.string()).optional(),
 });
 
 const completeSchema = z.object({
-	dailySmokingRange: z
-		.enum(["UNDER_5", "FROM_5_10", "FROM_10_20", "OVER_20", "UNKNOWN"])
-		.optional(),
-	targetInterval: z.number().int().min(1).max(480).optional(),
-	motivation: z.string().max(200).optional(),
-	dayStartTime: z
-		.string()
-		.regex(/^\d{2}:\d{2}$/)
-		.optional(),
 	nickname: z.string().min(1).max(20).optional(),
-	modules: z.array(ModuleSettingSchema).min(1).max(4).optional(),
+	dayAnchorMinutes: z.number().int().min(0).max(1440).optional(),
+	modules: z.array(ModuleSettingSchema).min(1).max(2).optional(),
 });
 
 export const onboardingRoutes: FastifyPluginAsync = async (app) => {
@@ -43,25 +32,24 @@ export const onboardingRoutes: FastifyPluginAsync = async (app) => {
 			return reply.code(400).send({ success: false, error: parsed.error.message });
 		}
 
-		const { dailySmokingRange, targetInterval, motivation, dayStartTime, nickname, modules } =
-			parsed.data;
+		const { nickname, dayAnchorMinutes, modules } = parsed.data;
 
-		const DEFAULT_INTERVALS: Record<string, number> = {
-			SMOKE: 60,
-			SNS: 30,
-			CAFFEINE: 180,
-			FOCUS: 10,
+		const DEFAULT_DURATIONS: Record<string, number> = {
+			SMOKE: 90,
+			SNS: 90,
 		};
 
 		const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+			const enabledModules = modules?.filter((m) => m.enabled).map((m) => m.moduleType) ?? [
+				"SMOKE",
+			];
+
 			const updatedUser = await tx.user.update({
 				where: { id: userId },
 				data: {
-					dailySmokingRange: dailySmokingRange ?? null,
-					currentTargetInterval: targetInterval ?? 60,
-					currentMotivation: motivation ?? null,
-					dayStartTime: dayStartTime ?? "04:00",
 					nickname: nickname ?? null,
+					dayAnchorMinutes: dayAnchorMinutes ?? 240,
+					enabledModules,
 					onboardingCompleted: true,
 				},
 			});
@@ -79,18 +67,18 @@ export const onboardingRoutes: FastifyPluginAsync = async (app) => {
 							userId,
 							moduleType: mod.moduleType,
 							enabled: mod.enabled,
-							targetIntervalMin: mod.targetIntervalMin ?? DEFAULT_INTERVALS[mod.moduleType] ?? 60,
-							configJson: mod.config ?? undefined,
+							defaultDuration: mod.defaultDuration ?? DEFAULT_DURATIONS[mod.moduleType] ?? 90,
+							trackedApps: mod.trackedApps ?? [],
 						},
 						update: {
 							enabled: mod.enabled,
-							targetIntervalMin: mod.targetIntervalMin ?? DEFAULT_INTERVALS[mod.moduleType] ?? 60,
-							configJson: mod.config ?? undefined,
+							defaultDuration: mod.defaultDuration ?? DEFAULT_DURATIONS[mod.moduleType] ?? 90,
+							trackedApps: mod.trackedApps ?? [],
 						},
 					});
 				}
 
-				const allModuleTypes: ModuleType[] = ["SMOKE", "SNS", "CAFFEINE", "FOCUS"];
+				const allModuleTypes: UrgeType[] = ["SMOKE", "SNS"];
 				const enabledModuleTypes = modules.map((m) => m.moduleType);
 				const disabledModuleTypes = allModuleTypes.filter((t) => !enabledModuleTypes.includes(t));
 
@@ -106,7 +94,7 @@ export const onboardingRoutes: FastifyPluginAsync = async (app) => {
 							userId,
 							moduleType,
 							enabled: false,
-							targetIntervalMin: DEFAULT_INTERVALS[moduleType] ?? 60,
+							defaultDuration: DEFAULT_DURATIONS[moduleType] ?? 90,
 						},
 						update: {
 							enabled: false,

@@ -4,7 +4,13 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-	globalIgnores(["**/node_modules", "**/dist", "apps/web/.vite", "apps/server/prisma.config.ts"]),
+	globalIgnores([
+		"**/node_modules",
+		"**/dist",
+		"apps/web/.vite",
+		"apps/server/prisma.config.ts",
+		"apps/server/src/_legacy",
+	]),
 	{
 		files: ["apps/server/**/*.ts"],
 		extends: [js.configs.recommended, tseslint.configs.recommended],
