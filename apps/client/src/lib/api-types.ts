@@ -284,3 +284,83 @@ export interface ApiResponse<T> {
 	data?: T;
 	error?: string;
 }
+
+// ========================================
+// Pause MVP Types (@pause/engine)
+// ========================================
+
+export type PauseUrgeType = "SMOKE" | "SNS";
+export type PauseEventType = "URGE" | "PAUSE_START" | "PAUSE_END";
+export type PauseResult = "COMPLETED" | "GAVE_IN" | "CANCELLED";
+export type PauseDuration = 90 | 180;
+export type PauseTriggerSource = "MANUAL" | "WIDGET" | "SHORTCUT";
+
+export interface PauseEvent {
+	id: string;
+	userId: string;
+	urgeType: PauseUrgeType;
+	eventType: PauseEventType;
+	pauseDuration?: number;
+	result?: PauseResult;
+	triggerSource?: PauseTriggerSource;
+	snsAppName?: string;
+	timestamp: string;
+	localDayKey: string;
+	pauseStartEventId?: string;
+}
+
+export interface PauseModuleSummary {
+	totalUrges: number;
+	pauseAttempts: number;
+	pauseCompleted: number;
+	pauseGaveIn: number;
+	pauseCancelled: number;
+	successRate: number;
+}
+
+export interface PauseTodaySummary {
+	dayKey: string;
+	totalUrges: number;
+	pauseAttempts: number;
+	pauseCompleted: number;
+	pauseGaveIn: number;
+	successRate: number;
+	currentStreak: number;
+	byType: {
+		SMOKE: PauseModuleSummary;
+		SNS: PauseModuleSummary;
+	};
+	lastEventAt?: string;
+}
+
+export interface PauseDailySummary {
+	dayKey: string;
+	pauseAttempts: number;
+	pauseCompleted: number;
+	pauseGaveIn: number;
+	successRate: number;
+}
+
+export interface PauseWeeklyReport {
+	weekStartKey: string;
+	weekEndKey: string;
+	dailySummaries: PauseDailySummary[];
+	totalPauseAttempts: number;
+	totalCompleted: number;
+	totalGaveIn: number;
+	weeklySuccessRate: number;
+	bestStreak: number;
+	preferredDuration?: number;
+}
+
+export interface PauseStartInput {
+	urgeType: PauseUrgeType;
+	pauseDuration: PauseDuration;
+	triggerSource?: PauseTriggerSource;
+	snsAppName?: string;
+}
+
+export interface PauseEndInput {
+	pauseStartEventId: string;
+	result: PauseResult;
+}

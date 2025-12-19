@@ -1,5 +1,5 @@
-import { EngineHomeContent } from "@/components/home/engine-home-content";
+import { PauseHomeContent } from "@/components/pause";
 
 export function HomePage() {
-	return <EngineHomeContent />;
+	return <PauseHomeContent />;
 }

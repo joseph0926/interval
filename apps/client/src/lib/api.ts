@@ -19,6 +19,11 @@ import type {
 	EngineModuleType,
 	EngineReasonLabel,
 	EngineTriggerContext,
+	PauseEvent,
+	PauseTodaySummary,
+	PauseWeeklyReport,
+	PauseStartInput,
+	PauseEndInput,
 } from "./api-types";
 
 const client = axios.create({
@@ -167,6 +172,47 @@ export const api = {
 		},
 	},
 
+	// ========================================
+	// Pause MVP API (@pause/engine)
+	// ========================================
+	pause: {
+		start: async (data: PauseStartInput) => {
+			const res = await client.post<{ success: boolean; event: PauseEvent }>(
+				"/api/pause/start",
+				data,
+			);
+			return res.data;
+		},
+
+		end: async (data: PauseEndInput) => {
+			const res = await client.post<{
+				success: boolean;
+				event: PauseEvent;
+				summary: PauseTodaySummary;
+			}>("/api/pause/end", data);
+			return res.data;
+		},
+
+		today: async () => {
+			const res = await client.get<{ success: boolean; summary: PauseTodaySummary }>(
+				"/api/pause/today",
+			);
+			return res.data;
+		},
+
+		week: async (weekStart?: string) => {
+			const params = weekStart ? { weekStart } : {};
+			const res = await client.get<{ success: boolean; report: PauseWeeklyReport }>(
+				"/api/pause/week",
+				{ params },
+			);
+			return res.data;
+		},
+	},
+
+	// ========================================
+	// Legacy Engine API (will be deprecated)
+	// ========================================
 	engine: {
 		today: async () => {
 			const res = await client.get<{ success: boolean; data: EngineTodaySummary }>(
